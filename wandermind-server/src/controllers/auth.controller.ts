@@ -27,7 +27,7 @@ const generateToken = (userId: string) =>
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsed = registerSchema.safeParse(req.body);
-    if (!parsed.success) return sendError(res, parsed.error.errors[0].message, 400);
+    if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
     const { name, email, password, role } = parsed.data;
 
@@ -54,7 +54,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
-    if (!parsed.success) return sendError(res, parsed.error.errors[0].message, 400);
+    if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
     const { email, password } = parsed.data;
 
@@ -96,11 +96,66 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
 
 // Google OAuth — placeholder (wire up with passport or custom handler)
 export const googleAuth = async (req: Request, res: Response) => {
-  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${process.env.CLIENT_URL}/auth/google/callback&response_type=code&scope=openid%20email%20profile`;
+  const redirectUri = `${process.env.NODE_ENV === 'production' ? process.env.SERVER_URL : 'http://localhost:5000'}/api/auth/google/callback`;
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile`;
   res.redirect(googleAuthUrl);
 };
 
 export const googleCallback = async (req: Request, res: Response, next: NextFunction) => {
-  // TODO: Exchange code for token, upsert user, return JWT
-  res.redirect(`${process.env.CLIENT_URL}/auth/google/callback?error=not_implemented`);
+  try {
+    const { code } = req.query;
+    if (!code) return res.redirect(`${process.env.CLIENT_URL}/login?error=no_code`);
+
+    const redirectUri = `${process.env.NODE_ENV === 'production' ? process.env.SERVER_URL : 'http://localhost:5000'}/api/auth/google/callback`;
+
+    // 1. Exchange code for tokens
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    const tokenData = await tokenRes.json() as any;
+    if (tokenData.error) throw new Error(tokenData.error_description || 'Failed to exchange code');
+
+    // 2. Get user info
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const googleUser = await userRes.json() as any;
+
+    // 3. Upsert user
+    let user = await prisma.user.findUnique({ where: { email: googleUser.email } });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: googleUser.name,
+          email: googleUser.email,
+          image: googleUser.picture,
+          googleId: googleUser.id,
+          role: 'TRAVELER',
+          travelerProfile: { create: {} },
+        },
+      });
+    } else if (!user.googleId) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { googleId: googleUser.id, image: googleUser.picture },
+      });
+    }
+
+    // 4. Generate JWT and redirect
+    const token = generateToken(user.id);
+    res.redirect(`${process.env.CLIENT_URL}/login?token=${token}&user=${encodeURIComponent(JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role, image: user.image }))}`);
+  } catch (err) {
+    console.error('Google Auth Error:', err);
+    res.redirect(`${process.env.CLIENT_URL}/login?error=auth_failed`);
+  }
 };

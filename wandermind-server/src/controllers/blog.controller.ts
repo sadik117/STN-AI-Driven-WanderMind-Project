@@ -17,7 +17,7 @@ export const getBlogs = async (req: Request, res: Response, next: NextFunction) 
 
 export const getBlogBySlug = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const blog = await prisma.blogPost.findUnique({ where: { slug: req.params.slug }, include: { author: { select: { name: true, image: true } } } });
+    const blog = await prisma.blogPost.findUnique({ where: { slug: req.params.slug as string }, include: { author: { select: { name: true, image: true } } } });
     if (!blog || !blog.published) return sendError(res, 'Blog not found', 404);
     sendSuccess(res, blog, 'Blog fetched');
   } catch (err) { next(err); }
@@ -32,14 +32,14 @@ export const createBlog = async (req: Request, res: Response, next: NextFunction
 
 export const updateBlog = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const blog = await prisma.blogPost.update({ where: { id: req.params.id }, data: req.body });
+    const blog = await prisma.blogPost.update({ where: { id: req.params.id as string }, data: req.body });
     sendSuccess(res, blog, 'Blog updated');
   } catch (err) { next(err); }
 };
 
 export const deleteBlog = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await prisma.blogPost.delete({ where: { id: req.params.id } });
+    await prisma.blogPost.delete({ where: { id: req.params.id as string } });
     sendSuccess(res, null, 'Blog deleted');
   } catch (err) { next(err); }
 };

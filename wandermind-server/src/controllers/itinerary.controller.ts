@@ -17,7 +17,7 @@ export const getMyItineraries = async (req: AuthRequest, res: Response, next: Ne
 export const getItineraryById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const itinerary = await prisma.itinerary.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: { destination: true },
     });
     if (!itinerary) return sendError(res, 'Itinerary not found', 404);
@@ -37,10 +37,10 @@ export const saveItinerary = async (req: AuthRequest, res: Response, next: NextF
 
 export const deleteItinerary = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const itinerary = await prisma.itinerary.findUnique({ where: { id: req.params.id } });
+    const itinerary = await prisma.itinerary.findUnique({ where: { id: req.params.id as string } });
     if (!itinerary) return sendError(res, 'Itinerary not found', 404);
     if (itinerary.userId !== req.user!.id) return sendError(res, 'Not authorized', 403);
-    await prisma.itinerary.delete({ where: { id: req.params.id } });
+    await prisma.itinerary.delete({ where: { id: req.params.id as string } });
     sendSuccess(res, null, 'Itinerary deleted');
   } catch (err) { next(err); }
 };

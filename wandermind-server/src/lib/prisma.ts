@@ -12,7 +12,7 @@ export const prisma =
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 prisma.$connect()
-  .then(() => logger.info('✅ Connected to PostgreSQL via Prisma'))
-  .catch((err) => logger.error('❌ Prisma connection error:', err));
+  .then(() => logger.info('Connected to PostgreSQL via Prisma'))
+  .catch((err: any) => logger.error('Prisma connection error:', err));
 
 export default prisma;

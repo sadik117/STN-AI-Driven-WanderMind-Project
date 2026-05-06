@@ -17,7 +17,7 @@ const itinerarySchema = z.object({
 export const generateItinerary = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const parsed = itinerarySchema.safeParse(req.body);
-    if (!parsed.success) return sendError(res, parsed.error.errors[0].message, 400);
+    if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
     const { destination, days, budget, travelStyle, interests } = parsed.data;
 
@@ -55,7 +55,7 @@ Return ONLY valid JSON in this exact format:
 }`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       temperature: 0.7,
@@ -65,6 +65,22 @@ Return ONLY valid JSON in this exact format:
     if (!content) return sendError(res, 'AI failed to generate itinerary', 500);
 
     const itineraryPlan = JSON.parse(content);
+
+    // Save to DB if user authenticated
+    if (req.user) {
+      await prisma.itinerary.create({
+        data: {
+          userId: req.user.id,
+          title: itineraryPlan.title || `Trip to ${destination}`,
+          days,
+          budget: budget || null,
+          travelStyle,
+          planJson: itineraryPlan,
+          aiGenerated: true,
+        },
+      });
+    }
+
     sendSuccess(res, itineraryPlan, 'Itinerary generated successfully');
   } catch (err) {
     next(err);
@@ -80,7 +96,7 @@ const chatSchema = z.object({
 export const chatWithDestinationBot = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsed = chatSchema.safeParse(req.body);
-    if (!parsed.success) return sendError(res, parsed.error.errors[0].message, 400);
+    if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
     const { message, history } = parsed.data;
 
@@ -115,7 +131,7 @@ Guidelines:
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
       messages,
       temperature: 0.8,
       max_tokens: 1000,
@@ -140,7 +156,7 @@ const packingSchema = z.object({
 export const generatePackingList = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const parsed = packingSchema.safeParse(req.body);
-    if (!parsed.success) return sendError(res, parsed.error.errors[0].message, 400);
+    if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
     const { destination, startDate, endDate, activities, tripType } = parsed.data;
 
@@ -169,7 +185,7 @@ Return ONLY valid JSON:
 Categories should include: Clothing, Documents & Money, Toiletries, Electronics, Health & Safety, Snacks & Extras`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       temperature: 0.5,
@@ -212,7 +228,7 @@ const budgetSchema = z.object({
 export const analyzeBudget = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const parsed = budgetSchema.safeParse(req.body);
-    if (!parsed.success) return sendError(res, parsed.error.errors[0].message, 400);
+    if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
     const { destination, days, travelStyle, groupSize, totalBudget } = parsed.data;
 
@@ -243,7 +259,7 @@ Return ONLY valid JSON:
 }`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       temperature: 0.4,
@@ -268,7 +284,7 @@ const journalSchema = z.object({
 export const summarizeJournal = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const parsed = journalSchema.safeParse(req.body);
-    if (!parsed.success) return sendError(res, parsed.error.errors[0].message, 400);
+    if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
     const { rawNotes, destination, travelDate } = parsed.data;
 
@@ -290,7 +306,7 @@ Return ONLY valid JSON:
 }`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
       temperature: 0.8,

@@ -1,0 +1,217 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  TRAVELER
+  HOST
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String
+  email           String           @unique
+  password        String?
+  image           String?
+  role            Role             @default(TRAVELER)
+  googleId        String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  travelerProfile TravelerProfile?
+  hostProfile     HostProfile?
+  bookings        Booking[]
+  reviews         Review[]
+  itineraries     Itinerary[]
+  journals        JournalEntry[]
+  packingLists    PackingList[]
+  notifications   Notification[]
+  blogPosts       BlogPost[]
+}
+
+model TravelerProfile {
+  id          String        @id @default(cuid())
+  userId      String        @unique
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?
+  nationality String?
+  travelStyle String[]
+  wishlist    Destination[] @relation("Wishlist")
+}
+
+model HostProfile {
+  id            String       @id @default(cuid())
+  userId        String       @unique
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio           String       @default("")
+  verified      Boolean      @default(false)
+  languages     String[]
+  experiences   Experience[]
+  totalEarnings Float        @default(0)
+}
+
+model Destination {
+  id            String            @id @default(cuid())
+  name          String
+  slug          String            @unique
+  country       String
+  continent     String
+  description   String
+  images        String[]
+  tags          String[]
+  avgCostPerDay Float
+  rating        Float             @default(0)
+  reviewCount   Int               @default(0)
+  climate       String
+  bestMonths    String[]
+  latitude      Float
+  longitude     Float
+  featured      Boolean           @default(false)
+  experiences   Experience[]
+  itineraries   Itinerary[]
+  reviews       Review[]
+  wishedBy      TravelerProfile[] @relation("Wishlist")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model Experience {
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  images        String[]
+  price         Float
+  duration      String
+  category      String
+  maxGuests     Int
+  location      String
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  hostId        String
+  host          HostProfile @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  bookings      Booking[]
+  reviews       Review[]
+  rating        Float       @default(0)
+  reviewCount   Int         @default(0)
+  featured      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experienceId  String
+  experience    Experience    @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  date          DateTime
+  guests        Int
+  totalPrice    Float
+  status        BookingStatus @default(PENDING)
+  paymentStatus String        @default("unpaid")
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Itinerary {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destinationId String?
+  destination   Destination? @relation(fields: [destinationId], references: [id])
+  title         String
+  days          Int
+  budget        Float?
+  travelStyle   String
+  planJson      Json
+  aiGenerated   Boolean      @default(true)
+  isPublic      Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Review {
+  id            String       @id @default(cuid())
+  authorId      String
+  author        User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  destinationId String?
+  destination   Destination? @relation(fields: [destinationId], references: [id])
+  experienceId  String?
+  experience    Experience?  @relation(fields: [experienceId], references: [id])
+  rating        Float
+  content       String
+  createdAt     DateTime     @default(now())
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  excerpt     String
+  coverImage  String
+  tags        String[]
+  aiAssisted  Boolean  @default(false)
+  published   Boolean  @default(false)
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  readingTime Int      @default(5)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model JournalEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  rawNotes    String
+  aiSummary   String?
+  highlights  String[]
+  hashtags    String[]
+  destination String
+  travelDate  DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PackingList {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  destination String
+  tripType    String
+  startDate   DateTime?
+  endDate     DateTime?
+  itemsJson   Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}

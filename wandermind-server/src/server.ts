@@ -75,8 +75,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'WanderMind API is running 🌍', timestamp: new Date().toISOString() });
 });
 
+app.get('/', (req, res) => {
+  res.send('WanderMind is running..');
+});
+
 // 404 handler
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found` });
 });
 
@@ -86,8 +90,8 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 httpServer.listen(PORT, () => {
-  logger.info(`🚀 WanderMind server running on http://localhost:${PORT}`);
-  logger.info(`📊 Environment: ${process.env.NODE_ENV}`);
+  logger.info(`WanderMind server running on http://localhost:${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV}`);
 });
 
 export default app;

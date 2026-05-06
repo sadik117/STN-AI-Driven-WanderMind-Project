@@ -43,7 +43,7 @@ export function AIShowcase() {
             </ul>
             
             <div className="pt-4">
-              <Link href="/plan">
+              <Link href="/ai-planner">
                 <Button size="lg" className="h-14 px-8 text-lg shadow-lg hover:shadow-xl transition-all">
                   Try the AI Planner
                   <ArrowRight className="ml-2 h-5 w-5" />

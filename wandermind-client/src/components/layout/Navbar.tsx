@@ -38,13 +38,16 @@ export function Navbar() {
 
         {/* Desktop Nav Links */}
         <nav className="hidden md:flex items-center gap-6">
+          <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            Home
+          </Link>
           <Link href="/destinations" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
             Destinations
           </Link>
           <Link href="/experiences" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
             Experiences
           </Link>
-          <Link href="/plan" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+          <Link href="/ai-planner" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
             AI Trip Planner
           </Link>
           <Link href="/blog" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
@@ -58,10 +61,10 @@ export function Navbar() {
 
           {!isAuthenticated ? (
             <div className="hidden md:flex items-center gap-2">
-              <Link href="/auth/login">
+              <Link href="/login">
                 <Button variant="ghost" size="sm">Log In</Button>
               </Link>
-              <Link href="/auth/register">
+              <Link href="/register">
                 <Button size="sm">Sign Up</Button>
               </Link>
             </div>

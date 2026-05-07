@@ -12,6 +12,7 @@ const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['TRAVELER', 'HOST']).optional().default('TRAVELER'),
+  image: z.string().url().optional().or(z.literal('')),
 });
 
 const loginSchema = z.object({
@@ -29,7 +30,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
-    const { name, email, password, role } = parsed.data;
+    const { name, email, password, role, image } = parsed.data;
 
     const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) return sendError(res, 'Email already registered', 409);
@@ -37,7 +38,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const hashed = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
       data: {
-        name, email, password: hashed, role,
+        name, email, password: hashed, role, image,
         travelerProfile: role === 'TRAVELER' ? { create: {} } : undefined,
         hostProfile: role === 'HOST' ? { create: { bio: '', languages: [] } } : undefined,
       },

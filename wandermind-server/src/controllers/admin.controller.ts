@@ -44,7 +44,7 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 
 export const updateUserRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await prisma.user.update({ where: { id: req.params.id }, data: { role: req.body.role }, select: { id: true, name: true, email: true, role: true } });
+    const user = await prisma.user.update({ where: { id: req.params.id as string }, data: { role: req.body.role }, select: { id: true, name: true, email: true, role: true } });
     sendSuccess(res, user, 'User role updated');
   } catch (err) { next(err); }
 };

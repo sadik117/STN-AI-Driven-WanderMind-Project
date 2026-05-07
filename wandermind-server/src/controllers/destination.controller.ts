@@ -96,7 +96,7 @@ export const createDestination = async (req: Request, res: Response, next: NextF
   try {
     const destination = await prisma.destination.create({ data: req.body });
     await deleteCachePattern('destinations:*');
-    sendSuccess(res, destination, 'Destination created', 201);
+    sendSuccess(res, destination, 'Destination created Successfully', 201);
   } catch (err) {
     next(err);
   }

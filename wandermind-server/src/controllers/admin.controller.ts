@@ -34,11 +34,29 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
       ...(role && { role: role as any }),
     };
 
-    const [users, total] = await Promise.all([
+    const [users, total, roleGroups] = await Promise.all([
       prisma.user.findMany({ where, skip, take: limitNum, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, role: true, image: true, createdAt: true } }),
       prisma.user.count({ where }),
+      prisma.user.groupBy({ by: ['role'], _count: { role: true } }),
     ]);
-    sendPaginated(res, users, total, pageNum, limitNum, 'Users fetched');
+
+    const roleCounts = roleGroups.reduce((acc: any, group) => {
+      acc[group.role] = group._count.role;
+      return acc;
+    }, {});
+
+    res.json({
+      success: true,
+      message: 'Users fetched successfully',
+      data: users,
+      roleCounts,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      }
+    });
   } catch (err) { next(err); }
 };
 

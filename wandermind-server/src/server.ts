@@ -36,6 +36,8 @@ export const io = new SocketServer(httpServer, {
   },
 });
 
+app.set('io', io);
+
 io.on('connection', (socket) => {
   logger.info(`Socket connected: ${socket.id}`);
 

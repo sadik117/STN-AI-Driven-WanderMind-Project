@@ -63,19 +63,40 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
 export const updateUserRole = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = await prisma.user.update({ where: { id: req.params.id as string }, data: { role: req.body.role }, select: { id: true, name: true, email: true, role: true } });
-    sendSuccess(res, user, 'User role updated');
+    sendSuccess(res, user, 'User role updated successfully');
   } catch (err) { next(err); }
 };
 
 export const getAllBookings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = '1', limit = '20' } = req.query as Record<string, string>;
+    const { page = '1', limit = '10' } = req.query as Record<string, string>;
     const pageNum = parseInt(page), limitNum = parseInt(limit);
-    const [bookings, total] = await Promise.all([
+    const [bookings, total, statusGroups, revenueResult] = await Promise.all([
       prisma.booking.findMany({ skip: (pageNum - 1) * limitNum, take: limitNum, orderBy: { createdAt: 'desc' }, include: { user: { select: { name: true, email: true } }, experience: { select: { title: true, price: true } } } }),
       prisma.booking.count(),
+      prisma.booking.groupBy({ by: ['status'], _count: { status: true } }),
+      prisma.booking.aggregate({ _sum: { totalPrice: true }, where: { status: 'COMPLETED' } }),
     ]);
-    sendPaginated(res, bookings, total, pageNum, limitNum, 'Bookings fetched');
+
+    const stats = statusGroups.reduce((acc: any, group) => {
+      acc[group.status] = group._count.status;
+      return acc;
+    }, {});
+
+    res.json({
+      success: true,
+      message: 'Bookings fetched successfully',
+      data: bookings,
+      total,
+      stats,
+      totalRevenue: revenueResult._sum.totalPrice || 0,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      }
+    });
   } catch (err) { next(err); }
 };
 

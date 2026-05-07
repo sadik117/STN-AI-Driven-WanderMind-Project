@@ -35,11 +35,9 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 export default function ExperienceDetailPage() {
   const { slug } = useParams();
@@ -49,7 +47,6 @@ export default function ExperienceDetailPage() {
   const [date, setDate] = useState('');
   const [selectedImage, setSelectedImage] = useState(0);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
 
   const { data: experience, isLoading, isError } = useQuery({
     queryKey: ['experience', slug],

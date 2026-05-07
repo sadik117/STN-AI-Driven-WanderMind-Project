@@ -4,14 +4,63 @@ import { aiService } from "@/services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Map, Compass } from "lucide-react";
+import { Sparkles, Map, Compass, Clock, DollarSign, Lightbulb, Calendar, Package, Languages, Sun, Moon, Utensils, Landmark, ShoppingBag, Mountain, TreePine } from "lucide-react";
 import { toast } from "sonner";
+
+interface ItineraryActivity {
+  time: string;
+  place: string;
+  description: string;
+  duration: string;
+  estimatedCost: number;
+  tip: string;
+  category: string;
+}
+
+interface ItineraryDay {
+  day: number;
+  theme: string;
+  activities: ItineraryActivity[];
+}
+
+interface ItineraryData {
+  title: string;
+  summary: string;
+  totalEstimatedCost: number;
+  currency: string;
+  days: ItineraryDay[];
+  packingTips: string[];
+  bestTimeToVisit: string;
+  localPhrases: Array<{ phrase: string; meaning: string }>;
+}
+
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case 'food': return Utensils;
+    case 'culture': return Landmark;
+    case 'shopping': return ShoppingBag;
+    case 'adventure': return Mountain;
+    case 'nature': return TreePine;
+    default: return Map;
+  }
+};
+
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case 'food': return 'text-orange-500 bg-orange-50 dark:bg-orange-950/30';
+    case 'culture': return 'text-purple-500 bg-purple-50 dark:bg-purple-950/30';
+    case 'shopping': return 'text-pink-500 bg-pink-50 dark:bg-pink-950/30';
+    case 'adventure': return 'text-red-500 bg-red-50 dark:bg-red-950/30';
+    case 'nature': return 'text-green-500 bg-green-50 dark:bg-green-950/30';
+    default: return 'text-blue-500 bg-blue-50 dark:bg-blue-950/30';
+  }
+};
 
 export default function AIPlannerPage() {
   const [destination, setDestination] = useState("");
   const [days, setDays] = useState(3);
   const [loading, setLoading] = useState(false);
-  const [itinerary, setItinerary] = useState<any>(null);
+  const [itinerary, setItinerary] = useState<ItineraryData | null>(null);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +83,7 @@ export default function AIPlannerPage() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <div className="container mx-auto px-4 py-16 max-w-5xl">
+      <div className="container mx-auto px-4 py-16 max-w-6xl">
         <div className="text-center mb-16">
           <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-2xl mb-6">
             <Sparkles className="h-8 w-8 text-primary" />
@@ -104,17 +153,108 @@ export default function AIPlannerPage() {
                 <p className="text-muted-foreground">Analyzing top attractions, local secrets, and optimal routes...</p>
               </div>
             ) : itinerary ? (
-              <div className="bg-card border rounded-3xl p-6 md:p-10 shadow-sm">
-                <h2 className="text-3xl font-bold mb-8 font-heading flex items-center gap-3">
-                  <Map className="h-8 w-8 text-primary" /> Your Custom Itinerary
-                </h2>
-                <div className="prose dark:prose-invert max-w-none">
-                  {/* Note: In a real app you'd use a markdown renderer here */}
-                  <div className="bg-muted/50 p-6 rounded-2xl whitespace-pre-wrap font-sans text-base leading-relaxed border">
-                    {typeof itinerary.itinerary === 'string' ? itinerary.itinerary : 
-                     typeof itinerary === 'string' ? itinerary : 
-                     JSON.stringify(itinerary, null, 2)}
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border rounded-3xl p-6 md:p-8">
+                  <h2 className="text-3xl font-bold mb-3 font-heading">{itinerary.title}</h2>
+                  <p className="text-muted-foreground text-lg mb-4">{itinerary.summary}</p>
+                  <div className="flex items-center gap-2 text-primary font-semibold">
+                    <DollarSign className="h-5 w-5" />
+                    <span>Estimated Total: {itinerary.currency} {itinerary.totalEstimatedCost}</span>
                   </div>
+                </div>
+
+                {/* Days */}
+                {itinerary.days?.map((day) => (
+                  <div key={day.day} className="bg-card border rounded-3xl overflow-hidden shadow-sm">
+                    <div className="bg-primary/5 px-6 py-4 border-b">
+                      <h3 className="text-2xl font-bold font-heading flex items-center gap-2">
+                        <Sun className="h-6 w-6 text-primary" />
+                        Day {day.day}: {day.theme}
+                      </h3>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      {day.activities?.map((activity, idx) => {
+                        const Icon = getCategoryIcon(activity.category);
+                        const colorClass = getCategoryColor(activity.category);
+                        return (
+                          <div key={idx} className="flex gap-4 pb-4 border-b last:border-0 last:pb-0">
+                            <div className="flex-shrink-0 w-16 text-right">
+                              <span className="font-mono text-sm font-semibold text-primary">{activity.time}</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <h4 className="font-bold text-lg">{activity.place}</h4>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+                                  <Icon className="h-3 w-3" />
+                                  {activity.category}
+                                </span>
+                              </div>
+                              <p className="text-muted-foreground text-sm mb-2">{activity.description}</p>
+                              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {activity.duration}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="h-3 w-3" />
+                                  {itinerary.currency} {activity.estimatedCost}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Lightbulb className="h-3 w-3 text-yellow-500" />
+                                  {activity.tip}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Packing Tips */}
+                {itinerary.packingTips && itinerary.packingTips.length > 0 && (
+                  <div className="bg-card border rounded-3xl p-6">
+                    <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                      <Package className="h-5 w-5 text-primary" /> Packing Tips
+                    </h3>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {itinerary.packingTips.map((tip, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-muted-foreground">
+                          <span className="text-primary">•</span> {tip}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Best Time & Local Phrases */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {itinerary.bestTimeToVisit && (
+                    <div className="bg-card border rounded-3xl p-6">
+                      <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-primary" /> Best Time to Visit
+                      </h3>
+                      <p className="text-muted-foreground">{itinerary.bestTimeToVisit}</p>
+                    </div>
+                  )}
+                  
+                  {itinerary.localPhrases && itinerary.localPhrases.length > 0 && (
+                    <div className="bg-card border rounded-3xl p-6">
+                      <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                        <Languages className="h-5 w-5 text-primary" /> Local Phrases
+                      </h3>
+                      <div className="space-y-2">
+                        {itinerary.localPhrases.map((phrase, idx) => (
+                          <div key={idx} className="flex justify-between items-center border-b last:border-0 pb-2 last:pb-0">
+                            <span className="font-medium">{phrase.phrase}</span>
+                            <span className="text-muted-foreground text-sm">{phrase.meaning}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

@@ -71,7 +71,7 @@ export const getFeaturedDestinations = async (req: Request, res: Response, next:
 
 export const getDestinationBySlug = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { slug } = req.params;
+    const slug = req.params.slug as string;
     const cacheKey = `destination:${slug}`;
     const cached = await getCache(cacheKey);
     if (cached) return res.json({ success: true, data: cached });
@@ -104,7 +104,7 @@ export const createDestination = async (req: Request, res: Response, next: NextF
 
 export const updateDestination = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const destination = await prisma.destination.update({ where: { id }, data: req.body });
     await deleteCachePattern('destinations:*');
     await deleteCache(`destination:${destination.slug}`);
@@ -116,7 +116,7 @@ export const updateDestination = async (req: Request, res: Response, next: NextF
 
 export const deleteDestination = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     await prisma.destination.delete({ where: { id } });
     await deleteCachePattern('destinations:*');
     sendSuccess(res, null, 'Destination deleted');
@@ -127,7 +127,7 @@ export const deleteDestination = async (req: Request, res: Response, next: NextF
 
 export const toggleWishlist = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.id;
 
     const profile = await prisma.travelerProfile.findUnique({

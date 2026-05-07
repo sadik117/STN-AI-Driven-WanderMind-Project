@@ -19,6 +19,8 @@ import blogRoutes from './routes/blog.routes';
 import aiRoutes from './routes/ai.routes';
 import adminRoutes from './routes/admin.routes';
 import userRoutes from './routes/user.routes';
+import uploadRoutes from './routes/upload.routes';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -69,6 +71,7 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -90,6 +93,10 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 httpServer.listen(PORT, () => {
+  // Ensure uploads directory exists
+  if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
+  }
   logger.info(`WanderMind server running on http://localhost:${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV}`);
 });

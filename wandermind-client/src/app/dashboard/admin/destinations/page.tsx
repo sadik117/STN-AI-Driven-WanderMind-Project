@@ -65,7 +65,7 @@ interface Destination {
 // Predefined suggestions for tags and best months
 const SUGGESTED_TAGS = [
   'culture', 'nature', 'food', 'adventure', 'beach', 'history', 
-  'shopping', 'nightlife', 'family', 'luxury', 'budget', 'romantic',
+  'shopping', 'nightlife', 'family', 'luxury', 'budget', 'technology',
   'spiritual', 'wildlife', 'architecture', 'festivals', 'photography'
 ];
 

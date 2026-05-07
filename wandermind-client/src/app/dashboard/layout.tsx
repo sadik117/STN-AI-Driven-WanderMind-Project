@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { MobileDashboardNav } from '@/components/dashboard/MobileDashboardNav';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardLayout({
@@ -16,11 +17,11 @@ export default function DashboardLayout({
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []); // Run only once on mount to avoid loops
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      router.replace('/login'); // Use replace to avoid history stack bloat
     }
   }, [isLoading, isAuthenticated, router]);
 
@@ -43,11 +44,12 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-[calc(100vh-64px)] bg-background">
       <DashboardSidebar />
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+      <main className="flex-1 p-6 md:p-8 overflow-y-auto pb-24 md:pb-8">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>
       </main>
+      <MobileDashboardNav />
     </div>
   );
 }

@@ -471,7 +471,7 @@ export default function AdminDashboard() {
                 <span className="truncate">Blog Management</span>
               </Button>
             </Link>
-            <Link href="/dashboard/admin/bookings" className="block w-full">
+            <Link href="/dashboard/admin/all-bookings" className="block w-full">
               <Button variant="outline" className="w-full justify-start gap-3 h-11 md:h-12 text-sm">
                 <ShoppingBag className="h-4 w-4 md:h-5 md:w-5 text-purple-500 flex-shrink-0" />
                 <span className="truncate">Booking Management</span>

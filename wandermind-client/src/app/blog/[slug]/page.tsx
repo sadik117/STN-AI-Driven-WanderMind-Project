@@ -59,7 +59,7 @@ export default function BlogPostDetail() {
   return (
     <article className="pb-24">
       {/* Blog Post Header */}
-      <header className="py-16 md:py-24 bg-muted/30">
+      <header className="py-12 md:py-20 bg-muted/30">
         <div className="container mx-auto px-4 max-w-4xl">
           <Link href="/blog" className="inline-flex items-center gap-2 text-sm font-semibold text-primary mb-8 hover:gap-3 transition-all">
             <ArrowLeft className="h-4 w-4" />

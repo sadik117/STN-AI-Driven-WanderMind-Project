@@ -129,7 +129,7 @@ export default function BlogPage() {
 
                     {/* Featured Badge */}
                     {index === 0 && (
-                      <div className="absolute top-4 left-4 z-20">
+                      <div className="absolute top-5 left-1 z-20">
                         <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-none shadow-lg px-3 py-1.5 gap-1.5">
                           <Sparkles className="h-3 w-3" />
                           Featured
@@ -148,8 +148,8 @@ export default function BlogPage() {
                       />
 
                       {/* Tags Overlay */}
-                      <div className="absolute top-4 right-4 z-20 flex gap-2">
-                        {post.tags?.slice(0, 2).map((tag) => (
+                      <div className="absolute top-1 right-1.5 z-20 flex gap-1">
+                        {post.tags?.slice(1, 2).map((tag) => (
                           <Badge key={tag} className="bg-white/90 backdrop-blur-md text-black border-none shadow-lg hover:bg-white transition-all text-xs">
                             {tag}
                           </Badge>

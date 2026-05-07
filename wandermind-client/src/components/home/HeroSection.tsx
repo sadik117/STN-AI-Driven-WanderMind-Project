@@ -22,7 +22,7 @@ export function HeroSection() {
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/plan">
+          <Link href="/ai-planner">
             <Button size="lg" className="w-full sm:w-auto text-lg h-14 px-8 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-transform hover:scale-105">
               <Sparkles className="h-5 w-5" />
               Plan with AI
@@ -31,7 +31,7 @@ export function HeroSection() {
           <Link href="/destinations">
             <Button size="lg" variant="secondary" className="w-full sm:w-auto text-lg h-14 px-8 gap-2 bg-white text-black hover:bg-white/90 shadow-lg transition-transform hover:scale-105">
               <Map className="h-5 w-5" />
-              Explore Destinations
+              Explore Places
             </Button>
           </Link>
         </div>

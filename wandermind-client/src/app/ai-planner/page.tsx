@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { aiService } from "@/services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,15 +23,11 @@ import {
   Globe,
   Shield,
   CheckCircle,
-  Download,
-  Share2,
-  Heart,
   Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+
 
 interface ItineraryActivity {
   time: string;

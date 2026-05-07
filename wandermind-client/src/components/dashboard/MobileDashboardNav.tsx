@@ -25,7 +25,7 @@ export function MobileDashboardNav() {
       { name: 'Overview', href: `/dashboard/traveler`, icon: LayoutDashboard },
       { name: 'Itineraries', href: `/dashboard/traveler/itineraries`, icon: MapIcon },
       { name: 'Bookings', href: `/dashboard/traveler/bookings`, icon: Calendar },
-      { name: 'Saved', href: `/dashboard/traveler/saved`, icon: Heart },
+      { name: 'Saved', href: `/dashboard/traveler/saved-places`, icon: Heart },
     ],
     admin: [
       { name: 'Stats', href: `/dashboard/admin`, icon: LayoutDashboard },

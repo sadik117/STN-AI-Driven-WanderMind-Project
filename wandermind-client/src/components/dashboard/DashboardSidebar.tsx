@@ -28,7 +28,7 @@ export function DashboardSidebar() {
       { name: 'Overview', href: `/dashboard/traveler`, icon: LayoutDashboard },
       { name: 'My Itineraries', href: `/dashboard/traveler/itineraries`, icon: MapIcon },
       { name: 'My Bookings', href: `/dashboard/traveler/bookings`, icon: Calendar },
-      { name: 'Saved Places', href: `/dashboard/traveler/saved`, icon: Heart },
+      { name: 'Saved Places', href: `/dashboard/traveler/saved-places`, icon: Heart },
       { name: 'Blog Posts', href: `/dashboard/traveler/blogs`, icon: FileText },
     ],
     admin: [

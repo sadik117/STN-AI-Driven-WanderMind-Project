@@ -1,12 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { MapPin, Star, Heart, ChevronRight, Users, Camera, Sun, Compass, Sparkles } from 'lucide-react';
+import { MapPin, Star, Heart, ChevronRight, Users, Camera, Sun, Compass, Sparkles, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
 export interface DestinationProps {
   id: string;
@@ -20,11 +23,61 @@ export interface DestinationProps {
   tags: string[];
   description?: string;
   bestTime?: string;
+  isWishlisted?: boolean;
 }
 
 export function DestinationCard({ destination, featured = false }: { destination: DestinationProps; featured?: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
+  const [optimisticLiked, setOptimisticLiked] = useState(destination.isWishlisted || false);
+  const queryClient = useQueryClient();
+
+  // Toggle wishlist mutation
+  const toggleWishlistMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post(`/destinations/${id}/wishlist`);
+      return res.data;
+    },
+    onMutate: async (id) => {
+      // Optimistic update
+      setOptimisticLiked( prev => !prev );
+      
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['destinations'] });
+      
+      // Snapshot previous value
+      const previousDestinations = queryClient.getQueryData(['destinations']);
+      
+      // Optimistically update to new value
+      queryClient.setQueryData(['destinations'], (old: any) => {
+        if (old?.data) {
+          return {
+            ...old,
+            data: old.data.map((dest: DestinationProps) =>
+              dest.id === id ? { ...dest, isWishlisted: !optimisticLiked } : dest
+            )
+          };
+        }
+        return old;
+      });
+      
+      return { previousDestinations };
+    },
+    onSuccess: (data, id) => {
+      toast.success(data.message || (optimisticLiked ? 'Added to wishlist' : 'Removed from wishlist'));
+    },
+    onError: (error: any, id, context) => {
+      // Rollback on error
+      setOptimisticLiked(!optimisticLiked);
+      queryClient.setQueryData(['destinations'], context?.previousDestinations);
+      toast.error(error.response?.data?.message || 'Failed to update wishlist');
+    },
+  });
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlistMutation.mutate(destination.id);
+  };
 
   // Get gradient based on rating
   const getRatingColor = (rating: number) => {
@@ -154,16 +207,36 @@ export function DestinationCard({ destination, featured = false }: { destination
           )}
         </CardContent>
         
-        {/* Footer */}
-        <CardFooter className="p-5 pt-3 items-center border-t border-border/30 mt-2">
+        {/* Footer with Price and Wishlist Button */}
+        <CardFooter className="p-5 pt-3 flex items-center justify-between border-t border-border/30 mt-2">
           <motion.div 
-            className="flex items-baseline justify-start gap-0.5"
+            className="flex items-baseline gap-0.5"
             whileHover={{ scale: 1.05 }}
           >
             <span className="text-sm text-muted-foreground">From</span>
             <span className="font-bold text-lg text-primary">${destination.avgCostPerDay}</span>
             <span className="text-sm text-muted-foreground">/day</span>
           </motion.div>
+          
+          {/* Save/Wishlist Button */}
+          <motion.button
+            onClick={handleWishlistClick}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
+              optimisticLiked 
+                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
+                : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary'
+            }`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={toggleWishlistMutation.isPending}
+          >
+            {toggleWishlistMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Heart className={`h-3.5 w-3.5 transition-all ${optimisticLiked ? 'fill-red-500' : ''}`} />
+            )}
+            <span>{optimisticLiked ? 'Saved' : 'Save'}</span>
+          </motion.button>
         </CardFooter>
 
         {/* Hover Glow Effect */}
@@ -206,7 +279,7 @@ export function DestinationCardSkeleton() {
       </div>
       <div className="p-5 pt-3 border-t border-border/30 flex justify-between">
         <div className="h-8 bg-muted rounded w-24" />
-        <div className="h-8 bg-muted rounded w-20" />
+        <div className="h-8 bg-muted rounded w-16" />
       </div>
     </div>
   );
@@ -214,6 +287,46 @@ export function DestinationCardSkeleton() {
 
 // Horizontal Scroll Card Component (for hero sections)
 export function HorizontalDestinationCard({ destination }: { destination: DestinationProps }) {
+  const [optimisticLiked, setOptimisticLiked] = useState(destination.isWishlisted || false);
+  const queryClient = useQueryClient();
+
+  const toggleWishlistMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post(`/destinations/${id}/wishlist`);
+      return res.data;
+    },
+    onMutate: async (id) => {
+      setOptimisticLiked(!optimisticLiked);
+      await queryClient.cancelQueries({ queryKey: ['destinations'] });
+      const previousDestinations = queryClient.getQueryData(['destinations']);
+      queryClient.setQueryData(['destinations'], (old: any) => {
+        if (old?.data) {
+          return {
+            ...old,
+            data: old.data.map((dest: DestinationProps) =>
+              dest.id === id ? { ...dest, isWishlisted: !optimisticLiked } : dest
+            )
+          };
+        }
+        return old;
+      });
+      return { previousDestinations };
+    },
+    onError: (error: any) => {
+      setOptimisticLiked(!optimisticLiked);
+      toast.error(error.response?.data?.message || 'Failed to update wishlist');
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+    },
+  });
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlistMutation.mutate(destination.id);
+  };
+
   return (
     <motion.div
       whileHover={{ scale: 0.98 }}
@@ -228,19 +341,29 @@ export function HorizontalDestinationCard({ destination }: { destination: Destin
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           
+          {/* Wishlist Button on Horizontal Card */}
+          <button
+            onClick={handleWishlistClick}
+            className="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur-md rounded-full p-2 shadow-lg hover:shadow-xl transition-all"
+          >
+            <Heart className={`h-4 w-4 transition-all ${optimisticLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+          </button>
+          
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
             <div className="flex items-center gap-1 mb-2">
               <MapPin className="h-3 w-3" />
               <span className="text-sm">{destination.country}</span>
             </div>
             <h3 className="text-2xl font-bold font-heading mb-2">{destination.name}</h3>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                <span className="text-sm font-semibold">{destination.rating}</span>
-              </div>
-              <div className="text-sm">
-                From <span className="font-bold">${destination.avgCostPerDay}</span>/day
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                  <span className="text-sm font-semibold">{destination.rating}</span>
+                </div>
+                <div className="text-sm">
+                  From <span className="font-bold">${destination.avgCostPerDay}</span>/day
+                </div>
               </div>
             </div>
           </div>

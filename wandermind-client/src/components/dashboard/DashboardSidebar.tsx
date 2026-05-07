@@ -35,8 +35,8 @@ export function DashboardSidebar() {
       { name: 'Overview', href: `/dashboard/admin`, icon: LayoutDashboard },
       { name: 'User Management', href: `/dashboard/admin/users`, icon: Users },
       { name: 'Destinations', href: `/dashboard/admin/destinations`, icon: ImageIcon },
+      { name: 'All Bookings', href: `/dashboard/admin/all-bookings`, icon: Calendar },
       { name: 'Blog Posts', href: `/dashboard/admin/blogs`, icon: FileText },
-      { name: 'Settings', href: `/dashboard/admin/profile`, icon: Settings },
     ],
     host: [
       { name: 'Overview', href: `/dashboard/host`, icon: LayoutDashboard },

@@ -225,7 +225,7 @@ export default function AdminBookings() {
 
   const handleExportReport = async () => {
     try {
-      const response = await api.get('/admin/bookings/export', {
+      const response = await api.get('/bookings/export', {
         params: { status: statusFilter !== 'ALL' ? statusFilter : undefined },
         responseType: 'blob'
       });

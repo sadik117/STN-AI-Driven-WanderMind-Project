@@ -23,7 +23,7 @@ export default function BlogPostDetail() {
   const { data: post, isLoading, isError } = useQuery({
     queryKey: ['blog', slug],
     queryFn: async () => {
-      const res = await api.get(`/blogs/slug/${slug}`);
+      const res = await api.get(`/blogs/${slug}`);
       return res.data;
     },
   });

@@ -19,20 +19,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <DashboardHeader 
+      <DashboardHeader
         title="Admin Control Center"
         description="Monitor system activity and manage platform content."
       >
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Add User
-          </Button>
-          <Button className="gap-2">
-            <FilePlus className="h-4 w-4" />
-            New Blog Post
-          </Button>
-        </div>
       </DashboardHeader>
 
       {/* Stats Grid */}

@@ -1,26 +1,78 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { sendSuccess, sendError, sendPaginated } from '../utils/response';
-import { AuthRequest } from '../middleware/auth.middleware';
 
 export const getAdminStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const [totalUsers, totalDestinations, totalExperiences, totalBookings, revenueResult, recentBookings, usersByRole] = await Promise.all([
+    // Get current year's bookings
+    const startOfYear = new Date();
+    startOfYear.setMonth(0, 1);
+    startOfYear.setHours(0, 0, 0, 0);
+
+    const [totalUsers, totalDestinations, totalExperiences, totalBookings, revenueResult, recentBookings, usersByRole, allYearBookings] = await Promise.all([
       prisma.user.count(),
       prisma.destination.count(),
       prisma.experience.count(),
       prisma.booking.count(),
       prisma.booking.aggregate({ _sum: { totalPrice: true }, where: { status: 'COMPLETED' } }),
-      prisma.booking.findMany({ take: 10, orderBy: { createdAt: 'desc' }, include: { user: { select: { name: true } }, experience: { select: { title: true } } } }),
-      prisma.user.groupBy({ by: ['role'], _count: { role: true } }),
+      prisma.booking.findMany({ 
+        take: 10, 
+        orderBy: { createdAt: 'desc' }, 
+        include: { 
+          user: { select: { name: true } }, 
+          experience: { select: { title: true } } 
+        } 
+      }),
+      prisma.user.groupBy({ 
+        by: ['role'], 
+        _count: { role: true } 
+      }),
+      prisma.booking.findMany({
+        where: {
+          createdAt: { gte: startOfYear }
+        },
+        select: {
+          createdAt: true,
+          totalPrice: true
+        }
+      })
     ]);
 
-    sendSuccess(res, {
-      stats: { totalUsers, totalDestinations, totalExperiences, totalBookings, totalRevenue: revenueResult._sum.totalPrice || 0 },
+    // Process monthly data manually
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyData = months.map((month, index) => {
+      const monthBookings = allYearBookings.filter(booking => 
+        booking.createdAt.getMonth() === index
+      );
+      
+      return {
+        month,
+        bookings: monthBookings.length,
+        revenue: monthBookings.reduce((sum, booking) => sum + booking.totalPrice, 0)
+      };
+    });
+
+    const responseData = {
+      stats: { 
+        totalUsers, 
+        totalDestinations, 
+        totalExperiences, 
+        totalBookings, 
+        totalRevenue: revenueResult._sum.totalPrice || 0 
+      },
       recentBookings,
-      usersByRole,
-    }, 'Admin stats fetched');
-  } catch (err) { next(err); }
+      usersByRole: usersByRole.map(role => ({
+        role: role.role,
+        _count: { role: Number(role._count.role) }
+      })),
+      monthlyData,
+    };
+
+    sendSuccess(res, responseData, 'Admin stats fetched');
+  } catch (err) { 
+    console.error('Error fetching admin stats:', err);
+    next(err); 
+  }
 };
 
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -45,18 +97,7 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
       return acc;
     }, {});
 
-    res.json({
-      success: true,
-      message: 'Users fetched successfully',
-      data: users,
-      roleCounts,
-      pagination: {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
-      }
-    });
+    sendPaginated(res, users, total, pageNum, limitNum, 'Users fetched successfully', { roleCounts });
   } catch (err) { next(err); }
 };
 
@@ -83,19 +124,9 @@ export const getAllBookings = async (req: Request, res: Response, next: NextFunc
       return acc;
     }, {});
 
-    res.json({
-      success: true,
-      message: 'Bookings fetched successfully',
-      data: bookings,
-      total,
+    sendPaginated(res, bookings, total, pageNum, limitNum, 'Bookings fetched successfully', {
       stats,
-      totalRevenue: revenueResult._sum.totalPrice || 0,
-      pagination: {
-        total,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
-      }
+      totalRevenue: revenueResult._sum.totalPrice || 0
     });
   } catch (err) { next(err); }
 };

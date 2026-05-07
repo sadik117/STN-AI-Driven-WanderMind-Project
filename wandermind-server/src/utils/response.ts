@@ -14,12 +14,14 @@ export const sendPaginated = (
   total: number,
   page: number,
   limit: number,
-  message = 'Success'
+  message = 'Success',
+  extraData = {}
 ) => {
   res.json({
     success: true,
     message,
     data,
+    ...extraData,
     pagination: {
       total,
       page,

@@ -55,7 +55,7 @@ export const getFeaturedExperiences = async (req: Request, res: Response, next: 
 export const getExperienceById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const experience = await prisma.experience.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         destination: true,
         host: { include: { user: { select: { id: true, name: true, image: true } } } },
@@ -67,26 +67,97 @@ export const getExperienceById = async (req: Request, res: Response, next: NextF
   } catch (err) { next(err); }
 };
 
+
 export const createExperience = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const hostProfile = await prisma.hostProfile.findUnique({ where: { userId: req.user!.id } });
-    if (!hostProfile) return sendError(res, 'Host profile not found', 404);
+    const hostProfile = await prisma.hostProfile.findUnique({ 
+      where: { userId: req.user!.id } 
+    });
+    
+    if (!hostProfile) {
+      return sendError(res, 'Host profile not found. Please complete your host profile first.', 404);
+    }
 
-    const experience = await prisma.experience.create({ data: { ...req.body, hostId: hostProfile.id } });
+    const experience = await prisma.experience.create({ 
+      data: { 
+        ...req.body, 
+        hostId: hostProfile.id,
+        rating: 0,
+        reviewCount: 0
+      } 
+    });
+    
     sendSuccess(res, experience, 'Experience created', 201);
-  } catch (err) { next(err); }
+  } catch (err) { 
+    next(err); 
+  }
 };
+
+
+export const getHostExperiences = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    console.log('Fetching experiences for host user:', userId);
+    const { search = '' } = req.query as Record<string, string>;
+    
+    let hostProfile = await prisma.hostProfile.findUnique({
+      where: { userId }
+    });
+    
+    // Auto-create profile if missing but user has HOST role (handles legacy/manual role changes)
+    if (!hostProfile) {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && (user.role === 'HOST' || user.role === 'ADMIN')) {
+        hostProfile = await prisma.hostProfile.create({
+          data: { userId, bio: '', languages: [] }
+        });
+      } else {
+        return sendError(res, 'Host profile not found or unauthorized', 404);
+      }
+    }
+    
+    const where: any = {
+      hostId: hostProfile.id,
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      })
+    };
+    
+    const experiences = await prisma.experience.findMany({
+      where,
+      include: {
+        destination: {
+          select: {
+            id: true,
+            name: true,
+            country: true,
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    sendSuccess(res, experiences, 'Host experiences fetched');
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 export const updateExperience = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const experience = await prisma.experience.update({ where: { id: req.params.id }, data: req.body });
+    const experience = await prisma.experience.update({ where: { id: req.params.id as string }, data: req.body });
     sendSuccess(res, experience, 'Experience updated');
   } catch (err) { next(err); }
 };
 
+
 export const deleteExperience = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await prisma.experience.delete({ where: { id: req.params.id } });
+    await prisma.experience.delete({ where: { id: req.params.id as string } });
     sendSuccess(res, null, 'Experience deleted');
   } catch (err) { next(err); }
 };

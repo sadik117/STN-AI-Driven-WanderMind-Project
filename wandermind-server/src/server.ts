@@ -77,11 +77,11 @@ app.use('/api/upload', uploadRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'WanderMind API is running 🌍', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', message: 'WanderMind API is running well..', timestamp: new Date().toISOString() });
 });
 
 app.get('/', (req, res) => {
-  res.send('WanderMind is running..');
+  res.send('WanderMind server is running..');
 });
 
 // 404 handler

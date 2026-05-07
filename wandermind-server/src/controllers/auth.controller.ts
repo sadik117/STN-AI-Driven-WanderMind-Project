@@ -110,6 +110,7 @@ export const googleCallback = async (req: Request, res: Response, next: NextFunc
     const redirectUri = `${process.env.NODE_ENV === 'production' ? process.env.SERVER_URL : 'http://localhost:5000'}/api/auth/google/callback`;
 
     // 1. Exchange code for tokens
+    console.log('Exchanging Google code for tokens...');
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -123,13 +124,16 @@ export const googleCallback = async (req: Request, res: Response, next: NextFunc
     });
 
     const tokenData = await tokenRes.json() as any;
+    console.log('Google Token Data:', tokenData);
     if (tokenData.error) throw new Error(tokenData.error_description || 'Failed to exchange code');
 
     // 2. Get user info
+    console.log('Fetching Google user info...');
     const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
     const googleUser = await userRes.json() as any;
+    console.log('Google User Profile:', googleUser);
 
     // 3. Upsert user
     let user = await prisma.user.findUnique({ where: { email: googleUser.email } });

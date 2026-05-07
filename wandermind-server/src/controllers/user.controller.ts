@@ -54,7 +54,7 @@ export const getNotifications = async (req: AuthRequest, res: Response, next: Ne
 
 export const markNotificationRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await prisma.notification.update({ where: { id: req.params.id }, data: { read: true } });
+    await prisma.notification.update({ where: { id: req.params.id as string }, data: { read: true } });
     sendSuccess(res, null, 'Notification marked as read');
   } catch (err) { next(err); }
 };

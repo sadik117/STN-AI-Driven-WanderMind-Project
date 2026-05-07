@@ -35,9 +35,9 @@ export const getDestinations = async (req: Request, res: Response, next: NextFun
 
     const orderBy: any =
       sort === 'cost_asc' ? { avgCostPerDay: 'asc' }
-      : sort === 'cost_desc' ? { avgCostPerDay: 'desc' }
-      : sort === 'newest' ? { createdAt: 'desc' }
-      : { rating: 'desc' };
+        : sort === 'cost_desc' ? { avgCostPerDay: 'desc' }
+          : sort === 'newest' ? { createdAt: 'desc' }
+            : { rating: 'desc' };
 
     const [destinations, total] = await Promise.all([
       prisma.destination.findMany({ where, orderBy, skip, take: limitNum }),
@@ -140,12 +140,74 @@ export const toggleWishlist = async (req: AuthRequest, res: Response, next: Next
     await prisma.travelerProfile.update({
       where: { userId },
       data: {
-        wishlist: isWishlisted
-          ? { disconnect: { id } }
-          : { connect: { id } },
+        wishlist: !isWishlisted
+          ? { connect: { id } }
+          : { disconnect: { id } },
       },
     });
     sendSuccess(res, { wishlisted: !isWishlisted }, isWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+export const getWishlist = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return sendError(res, 'Unauthorized', 401);
+ 
+    // Try cache first
+    const cacheKey = `wishlist:${userId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return sendSuccess(res, cached, 'Wishlist fetched successfully');
+ 
+    const profile = await prisma.travelerProfile.findUnique({
+      where: { userId },
+      include: {
+        wishlist: {
+          orderBy: { rating: 'desc' },
+          include: {
+            experiences: {
+              take: 3,
+              orderBy: { rating: 'desc' },
+              select: {
+                id: true,
+                title: true,
+                price: true,
+                rating: true,
+                images: true,
+                category: true,
+              },
+            },
+            _count: {
+              select: { experiences: true },
+            },
+          },
+        },
+      },
+    });
+ 
+    const wishlist = profile?.wishlist ?? [];
+ 
+    const stats = {
+      totalDestinations: wishlist.length,
+      avgRating:
+        wishlist.length > 0
+          ? parseFloat(
+              (wishlist.reduce((acc, d) => acc + d.rating, 0) / wishlist.length).toFixed(2)
+            )
+          : 0,
+      totalExperiences: wishlist.reduce((acc, d) => acc + d._count.experiences, 0),
+      continents: [...new Set(wishlist.map((d) => d.continent))],
+    };
+ 
+    const payload = { wishlist, stats };
+ 
+    // Cache for 5 minutes shorter time because it's personal data
+    await setCache(cacheKey, payload, 300);
+ 
+    sendSuccess(res, payload, 'Wishlist fetched successfully');
   } catch (err) {
     next(err);
   }

@@ -1,19 +1,31 @@
 import { Router } from 'express';
 import {
-  getDestinations, getDestinationBySlug, createDestination,
-  updateDestination, deleteDestination, getFeaturedDestinations,
-  toggleWishlist
+  getDestinations,
+  getFeaturedDestinations,
+  getDestinationBySlug,
+  createDestination,
+  updateDestination,
+  deleteDestination,
+  toggleWishlist,
+  getWishlist,
 } from '../controllers/destination.controller';
 import { authenticate, requireRole } from '../middleware/auth.middleware';
 
 const router = Router();
 
+
 router.get('/', getDestinations);
 router.get('/featured', getFeaturedDestinations);
+
+router.get('/my-wishlist', authenticate, getWishlist);
+
 router.get('/:slug', getDestinationBySlug);
+
+router.post('/:id/wishlist', authenticate, toggleWishlist);
+
+// Admin routes 
 router.post('/', authenticate, requireRole('ADMIN'), createDestination);
 router.put('/:id', authenticate, requireRole('ADMIN'), updateDestination);
 router.delete('/:id', authenticate, requireRole('ADMIN'), deleteDestination);
-router.post('/:id/wishlist', authenticate, toggleWishlist);
 
 export default router;

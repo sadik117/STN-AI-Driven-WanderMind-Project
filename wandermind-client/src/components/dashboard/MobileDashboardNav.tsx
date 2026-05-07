@@ -38,7 +38,7 @@ export function MobileDashboardNav() {
       { name: 'Overview', href: `/dashboard/host`, icon: LayoutDashboard },
       { name: 'Experiences', href: `/dashboard/host/experiences`, icon: ImageIcon },
       { name: 'Bookings', href: `/dashboard/host/bookings`, icon: Calendar },
-      { name: 'Profile', href: `/dashboard/host/profile`, icon: Settings },
+      { name: 'Blogs', href: `/dashboard/admin/blogs`, icon: FileText },
     ]
   };
 

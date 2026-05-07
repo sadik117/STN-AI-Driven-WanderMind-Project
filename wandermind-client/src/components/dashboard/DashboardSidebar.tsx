@@ -29,7 +29,7 @@ export function DashboardSidebar() {
       { name: 'My Itineraries', href: `/dashboard/traveler/itineraries`, icon: MapIcon },
       { name: 'My Bookings', href: `/dashboard/traveler/bookings`, icon: Calendar },
       { name: 'Saved Places', href: `/dashboard/traveler/saved`, icon: Heart },
-      { name: 'Settings', href: `/dashboard/traveler/profile`, icon: Settings },
+      { name: 'Blog Posts', href: `/dashboard/traveler/blogs`, icon: FileText },
     ],
     admin: [
       { name: 'Overview', href: `/dashboard/admin`, icon: LayoutDashboard },
@@ -42,7 +42,7 @@ export function DashboardSidebar() {
       { name: 'Overview', href: `/dashboard/host`, icon: LayoutDashboard },
       { name: 'My Experiences', href: `/dashboard/host/experiences`, icon: ImageIcon },
       { name: 'Bookings', href: `/dashboard/host/bookings`, icon: Calendar },
-      { name: 'Settings', href: `/dashboard/host/profile`, icon: Settings },
+      { name: 'Blog Posts', href: `/dashboard/host/blogs`, icon: FileText },
     ]
   };
 

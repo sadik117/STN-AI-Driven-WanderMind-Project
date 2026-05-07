@@ -59,10 +59,10 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-8 pb-8">
-            <div className="mb-6">
+            <div className="my-4">
               <ImageUpload 
                 onUpload={(url) => setImage(url)} 
-                label="Profile Picture" 
+                label=""  
               />
             </div>
             <form onSubmit={handleSubmit} className="space-y-5">

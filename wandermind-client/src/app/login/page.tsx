@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/services';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,40 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Map, Mail, Lock, ArrowRight, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login: setAuth } = useAuthStore();
+  const searchParams = useSearchParams();
   const router = useRouter();
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const userJson = searchParams.get('user');
+    const error = searchParams.get('error');
+
+    if (error) {
+      toast.error(error === 'auth_failed' ? 'Google authentication failed' : 'Social login cancelled');
+      // Clean up URL
+      router.replace('/login');
+    }
+
+    if (token && userJson) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userJson));
+        setAuth(user, token);
+        toast.success('Signed in with Google!');
+        router.push(`/dashboard/${user.role.toLowerCase()}`);
+      } catch (e) {
+        toast.error('Failed to process Google login');
+      }
+    }
+  }, [searchParams, setAuth, router]);
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/google`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,9 +102,6 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password"  className="text-xs font-semibold text-primary hover:underline">
-                  Forgot password?
-                </Link>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -109,8 +134,12 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" className="h-12 rounded-xl border-border/50 gap-2 font-semibold">
+          <div className="grid grid-cols-1 gap-4">
+            <Button 
+              variant="outline" 
+              className="h-12 rounded-xl border-border/50 gap-2 font-semibold"
+              onClick={handleGoogleLogin}
+            >
               <Globe className="h-5 w-5 text-red-500" /> Google
             </Button>
           </div>
@@ -125,5 +154,17 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center">
+        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

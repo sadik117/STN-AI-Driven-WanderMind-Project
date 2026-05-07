@@ -11,11 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Map, Mail, Lock, User, ArrowRight, Globe } from 'lucide-react';
 import { toast } from 'sonner';
+import { ImageUpload } from '@/components/shared/ImageUpload';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [image, setImage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login: setAuth } = useAuthStore();
   const router = useRouter();
@@ -25,7 +27,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await authService.register({ name, email, password });
+      const response = await authService.register({ name, email, password, image });
       const { user, token } = response.data;
       setAuth(user, token);
       toast.success('Welcome to WanderMind! Your journey begins now.');
@@ -57,6 +59,12 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-8 pb-8">
+            <div className="mb-6">
+              <ImageUpload 
+                onUpload={(url) => setImage(url)} 
+                label="Profile Picture" 
+              />
+            </div>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>

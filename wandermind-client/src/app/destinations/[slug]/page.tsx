@@ -26,7 +26,7 @@ export default function DestinationDetailPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['destination', slug],
     queryFn: async () => {
-      const res = await api.get(`/destinations/slug/${slug}`);
+      const res = await api.get(`/destinations/${slug}`);
       return res.data;
     },
   });
@@ -97,7 +97,7 @@ export default function DestinationDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Star className="h-5 w-5 text-accent fill-accent" />
-                <span className="text-lg font-medium">{destination.rating} (128 reviews)</span>
+                <span className="text-lg font-medium">{destination.rating}</span>
               </div>
               <div className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-emerald-400" />

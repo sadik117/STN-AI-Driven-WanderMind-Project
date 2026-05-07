@@ -15,8 +15,8 @@ export default function Home() {
       <PopularDestinations />
       <AIShowcase />
       <TopExperiences />
-      <StatsSection />
       <Testimonials />
+      <StatsSection />
       <Newsletter />
     </div>
   );

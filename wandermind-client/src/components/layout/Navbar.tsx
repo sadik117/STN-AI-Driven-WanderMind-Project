@@ -21,7 +21,11 @@ import {
   Settings,
   LayoutDashboard,
   Plane,
-  Star
+  Star,
+  Bell,
+  HelpCircle,
+  Shield,
+  Badge
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,6 +38,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -69,9 +74,15 @@ export function Navbar() {
     }
   };
 
+
   const isActive = (href: string) => {
     if (href === '/') return pathname === href;
     return pathname.startsWith(href);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -207,7 +218,7 @@ export function Navbar() {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[350px] p-0 rounded-l-3xl border-l-0">
+              <SheetContent side="right" className="w-[350px] p-0 rounded-l-3xl border-l-0">
                 <div className="flex flex-col h-full">
                   {/* Mobile Menu Header */}
                   <div className="p-6 border-b bg-gradient-to-r from-primary/5 to-transparent">
@@ -224,24 +235,29 @@ export function Navbar() {
                     </div>
                     {isAuthenticated && (
                       <div className="flex items-center gap-3 mt-2 p-3 bg-muted/50 rounded-2xl">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                          {user?.image ? (
-                            <img src={user.image} alt={user.name} className="h-full w-full rounded-full object-cover" />
-                          ) : (
-                            <User className="h-5 w-5 text-primary" />
-                          )}
-                        </div>
+                        <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+                          <AvatarImage src={user?.image || undefined} />
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
+                            {user?.name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
                         <div>
                           <p className="font-semibold text-sm">{user?.name}</p>
                           <p className="text-xs text-muted-foreground">{user?.email}</p>
+                          <Badge  className="mt-1 text-[10px] px-2 py-0 rounded-full">
+                            {user?.role || 'Traveler'}
+                          </Badge>
                         </div>
                       </div>
                     )}
                   </div>
 
                   {/* Mobile Navigation Links */}
-                  <div className="flex-1 py-6 px-4">
+                  <div className="flex-1 overflow-y-auto py-6 px-4">
                     <div className="space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-4">
+                        Navigation
+                      </p>
                       {navLinks.map((link) => (
                         <Link
                           key={link.href}
@@ -259,33 +275,37 @@ export function Navbar() {
                       ))}
                     </div>
 
-                    <div className="mt-8 pt-6 border-t">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-4">
-                        Explore
-                      </p>
-                      <div className="space-y-1">
-                        <Link
-                          href="/destinations"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 rounded-xl text-muted-foreground hover:bg-muted/50 transition-all"
-                        >
-                          <Globe className="h-4 w-4" />
-                          <span>Popular Destinations</span>
-                        </Link>
-                        <Link
-                          href="/experiences"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-2 rounded-xl text-muted-foreground hover:bg-muted/50 transition-all"
-                        >
-                          <Plane className="h-4 w-4" />
-                          <span>Travel Experiences</span>
-                        </Link>
-                      </div>
-                    </div>
+                    {isAuthenticated && (
+                      <>
+                        <div className="mt-6 pt-4 border-t">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-4">
+                            Account
+                          </p>
+                          <div className="space-y-1">
+                            <Link
+                              href={getDashboardLink()}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-muted/50 transition-all"
+                            >
+                              <LayoutDashboard className="h-5 w-5" />
+                              <span>Dashboard</span>
+                            </Link>
+                            <Link
+                              href={`${getDashboardLink()}/profile`}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-muted/50 transition-all"
+                            >
+                              <User className="h-5 w-5" />
+                              <span>Profile Settings</span>
+                            </Link>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {/* Mobile Menu Footer */}
-                  <div className="p-6 border-t">
+                  {/* Mobile Menu Footer - Logout Button */}
+                  <div className="p-6 border-t bg-muted/20">
                     {!isAuthenticated ? (
                       <div className="space-y-2">
                         <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
@@ -300,24 +320,18 @@ export function Navbar() {
                         </Link>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <Link href={getDashboardLink()} onClick={() => setIsMobileMenuOpen(false)}>
-                          <Button variant="outline" className="w-full rounded-xl gap-2">
-                            <LayoutDashboard className="h-4 w-4" />
-                            Dashboard
-                          </Button>
-                        </Link>
+                      <div className="space-y-3">
                         <Button 
                           variant="destructive" 
-                          className="w-full rounded-xl gap-2"
-                          onClick={() => {
-                            logout();
-                            setIsMobileMenuOpen(false);
-                          }}
+                          className="w-full rounded-xl gap-2 h-11 text-base font-semibold shadow-lg"
+                          onClick={handleLogout}
                         >
-                          <LogOut className="h-4 w-4" />
+                          <LogOut className="h-5 w-5" />
                           Log Out
                         </Button>
+                        <p className="text-center text-xs text-muted-foreground">
+                          © 2024 WanderMind. All rights reserved.
+                        </p>
                       </div>
                     )}
                   </div>

@@ -24,7 +24,10 @@ import {
   Copy,
   Check,
   Image as ImageIcon,
-  Sparkles
+  Sparkles,
+  User,
+  Users,
+  Shield
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
@@ -66,6 +69,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface BlogPost {
   id: string;
@@ -82,6 +86,7 @@ interface BlogPost {
   author: {
     name: string;
     image: string | null;
+    role?: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -90,10 +95,12 @@ interface BlogPost {
 const SUGGESTED_TAGS = [
   'Travel Tips', 'Destinations', 'Culture', 'Food', 'Adventure',
   'Luxury Travel', 'Budget Travel', 'Solo Travel', 'Family Travel',
-  'Sustainable Travel', 'Photography', 'Wellness', 'Beaches', 'Mountains'
+  'Sustainable Travel', 'Photography', 'Wellness', 'Beaches', 'Mountains',
+  'Local Experiences', 'Hidden Gems', 'Travel Stories', 'Itinerary'
 ];
 
-export default function AdminBlogs() {
+export default function MyBlogsPage() {
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -118,10 +125,29 @@ export default function AdminBlogs() {
   const [published, setPublished] = useState(false);
   const [readingTime, setReadingTime] = useState(5);
 
+  // Role-based endpoint - different endpoints for different roles
+  const getBlogsEndpoint = () => {
+    switch (user?.role?.toLowerCase()) {
+      case 'admin':
+        return '/admin/blogs';
+      default:
+        return '/blogs/my-blogs';
+    }
+  };
+
+  const getBlogsKey = () => {
+    switch (user?.role?.toLowerCase()) {
+      case 'admin':
+        return ['admin-blogs', search, statusFilter];
+      default:
+        return ['my-blogs', search, statusFilter];
+    }
+  };
+
   const { data: blogsData, isLoading, refetch } = useQuery({
-    queryKey: ['admin-blogs', search, statusFilter],
+    queryKey: getBlogsKey(),
     queryFn: async () => {
-      const res = await api.get('/admin/blogs', {
+      const res = await api.get(getBlogsEndpoint(), {
         params: { 
           search: search || undefined,
           status: statusFilter !== 'ALL' ? statusFilter : undefined,
@@ -129,7 +155,8 @@ export default function AdminBlogs() {
         }
       });
       return res.data;
-    }
+    },
+    enabled: !!user,
   });
 
   const createMutation = useMutation({
@@ -138,7 +165,7 @@ export default function AdminBlogs() {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      queryClient.invalidateQueries({ queryKey: getBlogsKey() });
       toast.success('Blog post created successfully');
       setIsCreateOpen(false);
       resetForm();
@@ -155,7 +182,7 @@ export default function AdminBlogs() {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      queryClient.invalidateQueries({ queryKey: getBlogsKey() });
       toast.success('Blog post updated successfully');
       setIsEditOpen(false);
       resetForm();
@@ -172,7 +199,7 @@ export default function AdminBlogs() {
       return res.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      queryClient.invalidateQueries({ queryKey: getBlogsKey() });
       toast.success(`Blog post ${data.published ? 'published' : 'unpublished'} successfully`);
       refetch();
     },
@@ -186,7 +213,7 @@ export default function AdminBlogs() {
       await api.delete(`/blogs/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      queryClient.invalidateQueries({ queryKey: getBlogsKey() });
       toast.success('Blog post deleted successfully');
       setIsDeleteOpen(false);
       setSelectedBlog(null);
@@ -254,9 +281,20 @@ export default function AdminBlogs() {
     setTags(tags.filter(t => t !== tag));
   };
 
+  const calculateReadingTime = (text: string) => {
+    const words = text.trim().split(/\s+/).length;
+    const minutes = Math.ceil(words / 200);
+    return Math.max(1, minutes);
+  };
+
+  const handleContentChange = (value: string) => {
+    setContent(value);
+    setReadingTime(calculateReadingTime(value));
+  };
+
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!coverImageFile) {
+    if (!coverImageFile && !coverImage) {
       toast.error('Please upload a cover image');
       return;
     }
@@ -270,8 +308,9 @@ export default function AdminBlogs() {
     formData.append('aiAssisted', String(aiAssisted));
     formData.append('published', String(published));
     formData.append('readingTime', String(readingTime));
-    formData.append('coverImage', coverImageFile);
-    formData.append('authorId', 'admin'); // Backend should handle this from token though
+    if (coverImageFile) {
+      formData.append('coverImage', coverImageFile);
+    }
 
     createMutation.mutate(formData);
   };
@@ -302,6 +341,10 @@ export default function AdminBlogs() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Image size should be less than 10MB');
+        return;
+      }
       setCoverImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -322,11 +365,55 @@ export default function AdminBlogs() {
       : 'bg-amber-500/10 text-amber-500 border-amber-500/20';
   };
 
+  const getRoleIcon = () => {
+    switch (user?.role?.toLowerCase()) {
+      case 'admin':
+        return <Shield className="h-5 w-5" />;
+      case 'host':
+        return <Users className="h-5 w-5" />;
+      default:
+        return <User className="h-5 w-5" />;
+    }
+  };
+
+  const getRoleTitle = () => {
+    switch (user?.role?.toLowerCase()) {
+      case 'admin':
+        return 'Admin Blog Management';
+      case 'host':
+        return 'My Host Blog';
+      default:
+        return 'My Travel Blog';
+    }
+  };
+
+  const getRoleDescription = () => {
+    switch (user?.role?.toLowerCase()) {
+      case 'admin':
+        return 'Manage all blog posts across the platform.';
+      case 'host':
+        return 'Share your hosting experiences, local insights, and travel tips with the community.';
+      default:
+        return 'Share your travel stories, experiences, and tips with fellow travelers.';
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="rounded-3xl p-8 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Loading...</p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <DashboardHeader 
-        title="Blog Management"
-        description="Create, edit, and manage blog posts for the travel community."
+        title={getRoleTitle()}
+        description={getRoleDescription()}
       >
         <Button 
           onClick={() => {
@@ -342,57 +429,57 @@ export default function AdminBlogs() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
+        <Card className="rounded-2xl bg-gradient-to-br from-primary/5 to-transparent">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Posts</p>
+                <p className="text-sm text-muted-foreground">Total Posts</p>
                 <h3 className="text-2xl font-bold mt-1">{blogsData?.total || 0}</h3>
               </div>
-              <div className="bg-primary/10 text-primary p-3 rounded-xl">
-                <Hash className="h-6 w-6" />
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Hash className="h-6 w-6 text-primary" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Published</p>
+                <p className="text-sm text-muted-foreground">Published</p>
                 <h3 className="text-2xl font-bold mt-1 text-emerald-500">{blogsData?.published || 0}</h3>
               </div>
-              <div className="bg-emerald-500/10 text-emerald-500 p-3 rounded-xl">
-                <Globe className="h-6 w-6" />
+              <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Globe className="h-6 w-6 text-emerald-500" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="rounded-2xl bg-gradient-to-br from-amber-500/5 to-transparent">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Drafts</p>
+                <p className="text-sm text-muted-foreground">Drafts</p>
                 <h3 className="text-2xl font-bold mt-1 text-amber-500">{blogsData?.drafts || 0}</h3>
               </div>
-              <div className="bg-amber-500/10 text-amber-500 p-3 rounded-xl">
-                <Edit2 className="h-6 w-6" />
+              <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <Edit2 className="h-6 w-6 text-amber-500" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="rounded-2xl bg-gradient-to-br from-purple-500/5 to-transparent">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">AI Assisted</p>
+                <p className="text-sm text-muted-foreground">AI Assisted</p>
                 <h3 className="text-2xl font-bold mt-1 text-purple-500">{blogsData?.aiAssisted || 0}</h3>
               </div>
-              <div className="bg-purple-500/10 text-purple-500 p-3 rounded-xl">
-                <Sparkles className="h-6 w-6" />
+              <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center">
+                <Sparkles className="h-6 w-6 text-purple-500" />
               </div>
             </div>
           </CardContent>
@@ -402,7 +489,7 @@ export default function AdminBlogs() {
       {/* Blog Posts Table */}
       <Card className="rounded-3xl">
         <CardHeader>
-          <CardTitle>All Blog Posts</CardTitle>
+          <CardTitle>My Blog Posts</CardTitle>
           <CardDescription>
             Manage your blog content, including drafts and published posts.
           </CardDescription>
@@ -566,7 +653,18 @@ export default function AdminBlogs() {
                 ) : (
                   <tr>
                     <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
-                      No blog posts found.
+                      <div className="flex flex-col items-center gap-2">
+                        <Edit2 className="h-12 w-12 text-muted-foreground/50" />
+                        <p>No blog posts found.</p>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setIsCreateOpen(true)}
+                          className="mt-2 rounded-xl"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Write Your First Post
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -576,7 +674,7 @@ export default function AdminBlogs() {
         </CardContent>
       </Card>
 
-      {/* Create/Edit Blog Dialog */}
+      {/* Create/Edit Blog Dialog - Same as before but with improved content editor */}
       <Dialog open={isCreateOpen || isEditOpen} onOpenChange={(open) => {
         if (!open) {
           setIsCreateOpen(false);
@@ -590,7 +688,9 @@ export default function AdminBlogs() {
               {isCreateOpen ? 'Create New Blog Post' : 'Edit Blog Post'}
             </DialogTitle>
             <DialogDescription>
-              {isCreateOpen ? 'Write a new blog post for the travel community.' : 'Edit your blog post content.'}
+              {isCreateOpen 
+                ? 'Share your travel experiences and insights with the community.' 
+                : 'Edit your blog post content.'}
             </DialogDescription>
           </DialogHeader>
           
@@ -673,6 +773,9 @@ export default function AdminBlogs() {
                     required 
                     className="rounded-xl min-h-[80px]" 
                   />
+                  <p className="text-xs text-muted-foreground">
+                    This will appear in blog listings and SEO meta descriptions.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -680,11 +783,14 @@ export default function AdminBlogs() {
                   <Textarea 
                     id="content"
                     value={content} 
-                    onChange={(e) => setContent(e.target.value)} 
-                    placeholder="Write your blog content here..."
+                    onChange={(e) => handleContentChange(e.target.value)} 
+                    placeholder="Write your blog content here... Use Markdown for formatting."
                     required 
                     className="rounded-xl min-h-[300px] font-mono text-sm" 
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Tip: Use **bold**, *italic*, and markdown for rich formatting.
+                  </p>
                 </div>
 
                 <div className="space-y-3">
@@ -754,6 +860,9 @@ export default function AdminBlogs() {
                       min="1"
                       max="60"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Auto-calculated: ~200 words per minute
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>&nbsp;</Label>
@@ -811,6 +920,10 @@ export default function AdminBlogs() {
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
                     {readingTime} min read
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    {user?.name}
                   </span>
                 </div>
                 <p className="text-lg text-muted-foreground italic">{excerpt || 'No excerpt provided'}</p>

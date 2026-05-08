@@ -22,16 +22,16 @@ export const getAdminBlogs = async (req: Request, res: Response, next: NextFunct
   try {
     const { search = '', status = 'ALL', limit = '100' } = req.query as Record<string, string>;
     const limitNum = parseInt(limit);
-    
+
     let where: any = {};
-    
+
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { excerpt: { contains: search, mode: 'insensitive' } }
       ];
     }
-    
+
     if (status === 'published') {
       where.published = true;
     } else if (status === 'draft') {
@@ -58,8 +58,63 @@ export const getAdminBlogs = async (req: Request, res: Response, next: NextFunct
       drafts,
       aiAssisted
     });
-  } catch (err) { 
-    next(err); 
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Shared endpoint for HOST and TRAVELER: returns only the authenticated user's own blog posts
+export const getMyBlogs = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { search = '', status = 'ALL', limit = '100' } = req.query as Record<string, string>;
+    const limitNum = parseInt(limit);
+    const userId = req.user!.id;
+    const userRole = req.user!.role; // 'HOST' | 'TRAVELER'
+
+    // Base filter: always scoped to the requesting user's posts
+    let where: any = { authorId: userId };
+
+    if (search) {
+      where.AND = [
+        {
+          OR: [
+            { title: { contains: search, mode: 'insensitive' } },
+            { excerpt: { contains: search, mode: 'insensitive' } }
+          ]
+        }
+      ];
+    }
+
+    if (status === 'published') {
+      where.published = true;
+    } else if (status === 'draft') {
+      where.published = false;
+    }
+
+    const [blogs, total, published, drafts, aiAssisted] = await Promise.all([
+      prisma.blogPost.findMany({
+        where,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        include: { author: { select: { name: true, image: true } } }
+      }),
+      prisma.blogPost.count({ where }),
+      // Stats always scoped to this user only
+      prisma.blogPost.count({ where: { authorId: userId, published: true } }),
+      prisma.blogPost.count({ where: { authorId: userId, published: false } }),
+      prisma.blogPost.count({ where: { authorId: userId, aiAssisted: true } })
+    ]);
+
+    sendSuccess(res, {
+      blogs,
+      total,
+      published,
+      drafts,
+      aiAssisted,
+      authorRole: userRole // so frontend can display role-specific UI
+    });
+  } catch (err) {
+    next(err);
   }
 };
 
@@ -98,6 +153,23 @@ export const createBlog = async (req: AuthRequest, res: Response, next: NextFunc
 
 export const updateBlog = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+    const userRole = req.user!.role;
+
+    const existingBlog = await prisma.blogPost.findUnique({
+      where: { id: id as string }
+    });
+
+    if (!existingBlog) {
+      return sendError(res, 'Blog not found', 404);
+    }
+
+    // Only author or ADMIN can update
+    if (existingBlog.authorId !== userId && userRole !== 'ADMIN') {
+      return sendError(res, 'You are not authorized to update this blog', 403);
+    }
+
     const data = { ...req.body };
     
     if (req.file) {
@@ -117,16 +189,33 @@ export const updateBlog = async (req: AuthRequest, res: Response, next: NextFunc
     if (data.readingTime) data.readingTime = parseInt(data.readingTime);
 
     const blog = await prisma.blogPost.update({ 
-      where: { id: req.params.id as string }, 
+      where: { id: id as string }, 
       data 
     });
     sendSuccess(res, blog, 'Blog updated');
   } catch (err) { next(err); }
 };
 
-export const deleteBlog = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteBlog = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await prisma.blogPost.delete({ where: { id: req.params.id as string } });
+    const { id } = req.params;
+    const userId = req.user!.id;
+    const userRole = req.user!.role;
+
+    const existingBlog = await prisma.blogPost.findUnique({
+      where: { id: id as string }
+    });
+
+    if (!existingBlog) {
+      return sendError(res, 'Blog not found', 404);
+    }
+
+    // Only author or ADMIN can delete
+    if (existingBlog.authorId !== userId && userRole !== 'ADMIN') {
+      return sendError(res, 'You are not authorized to delete this blog', 403);
+    }
+
+    await prisma.blogPost.delete({ where: { id: id as string } });
     sendSuccess(res, null, 'Blog deleted');
   } catch (err) { next(err); }
 };

@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { sendSuccess, sendError, sendPaginated } from '../utils/response';
 import { AuthRequest } from '../middleware/auth.middleware';
+import cloudinary from '../lib/cloudinary';
+import fs from 'fs';
 
 export const getProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -20,21 +22,62 @@ export const getProfile = async (req: AuthRequest, res: Response, next: NextFunc
 
 export const updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { name, image, bio, nationality, travelStyle } = req.body;
+    let { name, bio, nationality, travelStyle } = req.body;
+    let image = req.body.image;
+
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'wandermind/profiles',
+      });
+      image = result.secure_url;
+      fs.unlinkSync(req.file.path);
+    }
+
+    // Parse travelStyle if it comes as string (from FormData)
+    if (typeof travelStyle === 'string') {
+      try {
+        travelStyle = JSON.parse(travelStyle);
+      } catch (e) {
+        travelStyle = [];
+      }
+    }
+
+    const updateData: any = {
+      ...(name && { name }),
+      ...(image !== undefined && { image }),
+    };
+
+    // Role-aware profile updates
+    if (req.user!.role === 'HOST') {
+      updateData.hostProfile = {
+        upsert: {
+          create: { bio: bio || '' },
+          update: { bio: bio || '' },
+        },
+      };
+    } else {
+      updateData.travelerProfile = {
+        upsert: {
+          create: { bio: bio || '', nationality: nationality || '', travelStyle: travelStyle || [] },
+          update: { bio: bio || '', nationality: nationality || '', travelStyle: travelStyle || [] },
+        },
+      };
+    }
 
     const user = await prisma.user.update({
       where: { id: req.user!.id },
-      data: {
-        ...(name && { name }),
-        ...(image && { image }),
-        travelerProfile: {
-          upsert: {
-            create: { bio, nationality, travelStyle: travelStyle || [] },
-            update: { bio, nationality, travelStyle: travelStyle || [] },
-          },
-        },
+      data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        image: true,
+        createdAt: true,
+        travelerProfile: { include: { wishlist: { select: { id: true, name: true, slug: true, images: true } } } },
+        hostProfile: true,
+        _count: { select: { bookings: true, reviews: true, itineraries: true } },
       },
-      select: { id: true, name: true, email: true, role: true, image: true, travelerProfile: true },
     });
     sendSuccess(res, user, 'Profile updated');
   } catch (err) { next(err); }

@@ -5,7 +5,7 @@ import { sendSuccess, sendError } from '../utils/response';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
 
-// ─── 1. AI ITINERARY BUILDER ────────────────────────────────────────────────
+// 1. AI ITINERARY BUILDER 
 const itinerarySchema = z.object({
   destination: z.string().min(1),
   days: z.number().min(1).max(30),
@@ -16,6 +16,10 @@ const itinerarySchema = z.object({
 
 export const generateItinerary = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+
+    // Guard for must be authenticated before calling AI saves API credits
+    if (!req.user) return sendError(res, 'Please log in to generate an itinerary.', 401);
+
     const parsed = itinerarySchema.safeParse(req.body);
     if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
@@ -66,28 +70,26 @@ Return ONLY valid JSON in this exact format:
 
     const itineraryPlan = JSON.parse(content);
 
-    // Save to DB if user authenticated
-    if (req.user) {
-      await prisma.itinerary.create({
-        data: {
-          userId: req.user.id,
-          title: itineraryPlan.title || `Trip to ${destination}`,
-          days,
-          budget: budget || null,
-          travelStyle,
-          planJson: itineraryPlan,
-          aiGenerated: true,
-        },
-      });
-    }
+    // Save to DB (user is guaranteed authenticated at this point)
+    await prisma.itinerary.create({
+      data: {
+        userId: req.user.id,
+        title: itineraryPlan.title || `Trip to ${destination}`,
+        days,
+        budget: budget || null,
+        travelStyle,
+        planJson: itineraryPlan,
+        aiGenerated: true,
+      },
+    });
 
     sendSuccess(res, itineraryPlan, 'Itinerary generated successfully');
   } catch (err) {
-    next(err);
+    next(err); // pass the full error object, not err.message
   }
 };
 
-// ─── 2. AI DESTINATION DISCOVERY CHATBOT ───────────────────────────────────
+//  2. AI DESTINATION DISCOVERY CHATBOT 
 const chatSchema = z.object({
   message: z.string().min(1),
   history: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string() })).optional().default([]),
@@ -144,7 +146,7 @@ Guidelines:
   }
 };
 
-// ─── 3. AI PACKING LIST GENERATOR ───────────────────────────────────────────
+// 3. AI PACKING LIST GENERATOR 
 const packingSchema = z.object({
   destination: z.string().min(1),
   startDate: z.string().optional(),
@@ -216,7 +218,7 @@ Categories should include: Clothing, Documents & Money, Toiletries, Electronics,
   }
 };
 
-// ─── 4. AI BUDGET ANALYZER ──────────────────────────────────────────────────
+// 4. AI BUDGET ANALYZER 
 const budgetSchema = z.object({
   destination: z.string().min(1),
   days: z.number().min(1),
@@ -274,7 +276,7 @@ Return ONLY valid JSON:
   }
 };
 
-// ─── 5. AI JOURNAL SUMMARIZER ───────────────────────────────────────────────
+// 5. AI JOURNAL SUMMARIZER 
 const journalSchema = z.object({
   rawNotes: z.string().min(10, 'Please write at least a few sentences'),
   destination: z.string().min(1),

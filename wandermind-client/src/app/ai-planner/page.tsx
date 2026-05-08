@@ -1,6 +1,8 @@
 "use client"
 import { useState, useRef } from "react";
 import { aiService } from "@/services";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,17 +81,24 @@ const getCategoryColor = (category: string) => {
 };
 
 export default function AIPlannerPage() {
+  const { isAuthenticated } = useAuthStore();
+  const router = useRouter();
   const [destination, setDestination] = useState("");
   const [days, setDays] = useState(3);
   const [loading, setLoading] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [itinerary, setItinerary] = useState<ItineraryData | null>(null);
   const [activeDay, setActiveDay] = useState(1);
-  const [saved, setSaved] = useState(false);
   const itineraryRef = useRef<HTMLDivElement>(null);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isAuthenticated) {
+      toast.error("Please login to generate your travel itinerary!");
+      router.push("/login?redirect=/ai-planner");
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await aiService.generateItinerary({ 
@@ -101,17 +110,10 @@ export default function AIPlannerPage() {
       setItinerary(result.data || result);
       toast.success("Your personalized itinerary is ready!");
     } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message || "Failed to generate itinerary. Make sure you are logged in!");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to generate itinerary. Please log in first!");
     } finally {
       setLoading(false);
     }
-  };
-
-
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success("Link copied to clipboard!");
   };
 
 

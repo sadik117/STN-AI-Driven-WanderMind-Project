@@ -194,7 +194,7 @@ export function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                    <Link href={`${getDashboardLink()}/profile`} className="flex items-center gap-2">
+                    <Link href="/my-profile" className="flex items-center gap-2">
                       <User className="h-4 w-4" />
                       My Profile
                     </Link>
@@ -291,12 +291,12 @@ export function Navbar() {
                               <span>Dashboard</span>
                             </Link>
                             <Link
-                              href={`${getDashboardLink()}/profile`}
+                              href="/my-profile"
                               onClick={() => setIsMobileMenuOpen(false)}
                               className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-muted/50 transition-all"
                             >
                               <User className="h-5 w-5" />
-                              <span>Profile Settings</span>
+                              <span>My Profile</span>
                             </Link>
                           </div>
                         </div>

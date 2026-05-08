@@ -11,11 +11,10 @@ import {
   User, 
   Clock, 
   Share2, 
-  Bookmark,
-  ChevronLeft,
   ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function BlogPostDetail() {
   const { slug } = useParams();
@@ -103,10 +102,12 @@ export default function BlogPostDetail() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" className="rounded-full h-10 w-10">
-                <Bookmark className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="rounded-full h-10 w-10">
+              <Button variant="outline" size="icon" className="rounded-full h-10 w-10"
+              onClick={()=>{
+
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("Link copied to clipboard!")}}>
+
                 <Share2 className="h-4 w-4" />
               </Button>
             </div>
@@ -124,13 +125,13 @@ export default function BlogPostDetail() {
           />
         </div>
       </div>
-
+      
       {/* Content */}
       <div className="container mx-auto px-4 max-w-3xl">
         <div className="prose prose-lg prose-primary max-w-none dark:prose-invert">
           <div dangerouslySetInnerHTML={{ __html: post.content }} />
         </div>
-
+        
         {/* Post Footer */}
         <div className="mt-16 pt-12 border-t">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8 bg-muted/30 p-8 rounded-3xl">
@@ -150,27 +151,6 @@ export default function BlogPostDetail() {
                 <p className="text-muted-foreground text-sm mt-1">Travel writer & adventurer based in {post.author.location || 'somewhere beautiful'}.</p>
               </div>
             </div>
-            
-            <div className="flex gap-2">
-              <Button variant="ghost" size="icon" className="rounded-full h-12 w-12 hover:bg-primary/10 hover:text-primary">
-                <Share2 className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-12 flex justify-between items-center">
-            <Link href="/blog">
-              <Button variant="ghost" className="gap-2 font-bold group">
-                <ChevronLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-                Previous Article
-              </Button>
-            </Link>
-            <Link href="/blog">
-              <Button variant="ghost" className="gap-2 font-bold group">
-                Next Article
-                <Share2 className="h-4 w-4 group-hover:translate-x-1 transition-transform rotate-180" />
-              </Button>
-            </Link>
           </div>
         </div>
       </div>

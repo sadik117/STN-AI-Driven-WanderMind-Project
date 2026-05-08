@@ -16,6 +16,7 @@ interface AuthState {
   login: (user: User, token: string) => void;
   logout: () => void;
   checkAuth: () => void;
+  updateUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -27,6 +28,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem('wandermind_token', token);
     localStorage.setItem('wandermind_user', JSON.stringify(user));
     set({ user, isAuthenticated: true, isLoading: false });
+  },
+
+  updateUser: (user) => {
+    localStorage.setItem('wandermind_user', JSON.stringify(user));
+    set({ user });
   },
   
   logout: () => {

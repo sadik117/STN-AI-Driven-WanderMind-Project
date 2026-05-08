@@ -11,7 +11,7 @@ export function AIShowcase() {
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-br from-primary/5 via-background to-accent/5 relative overflow-hidden">
+    <section className="md:py-16 py-8 bg-gradient-to-br from-primary/5 via-background to-accent/5 relative overflow-hidden">
       {/* Decorative blobs */}
       <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl opacity-50" />
       <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-[500px] h-[500px] bg-accent/10 rounded-full blur-3xl opacity-50" />
@@ -44,7 +44,7 @@ export function AIShowcase() {
             
             <div className="pt-4">
               <Link href="/ai-planner">
-                <Button size="lg" className="h-14 px-8 text-lg shadow-lg hover:shadow-xl transition-all">
+                <Button size="lg" className="h-12 px-6 text-md shadow-lg hover:shadow-xl transition-all">
                   Try the AI Planner
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>

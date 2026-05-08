@@ -17,13 +17,13 @@ export function TopExperiences() {
   });
 
   return (
-    <section className="py-24">
+    <section className="py-8 md:py-12">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-foreground">
+          <h2 className="text-2xl md:text-3xl font-heading font-bold mb-4 text-foreground">
             Unforgettable Local Experiences
           </h2>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-md md:text-xl">
             Led by passionate local hosts, discover activities that will make your trip truly special.
           </p>
         </div>

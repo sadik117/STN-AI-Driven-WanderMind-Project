@@ -78,10 +78,10 @@ export function HowItWorks() {
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">Simple Process</span>
           </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <h2 className="text-2xl md:text-3xl font-heading font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             How WanderMind Works
           </h2>
-          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-md md:text-xl text-muted-foreground max-w-2xl mx-auto">
             Your next adventure is just three simple steps away. Let us help you create unforgettable memories.
           </p>
         </motion.div>

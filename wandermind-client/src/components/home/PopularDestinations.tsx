@@ -22,10 +22,10 @@ export function PopularDestinations() {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-end justify-center text-center mb-12 gap-4">
           <div className="max-w-2xl">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-foreground">
+            <h2 className="text-2xl md:text-3xl font-heading font-bold mb-4 text-foreground">
               Popular Destinations
             </h2>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground text-sm md:text-xl">
               Explore our most loved locations. From pristine beaches to bustling cities, find the perfect spot for your next journey.
             </p>
           </div>

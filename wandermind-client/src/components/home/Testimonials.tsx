@@ -43,13 +43,13 @@ export function Testimonials() {
   ];
 
   return (
-    <section className="py-24 bg-muted/30">
+    <section className="md:py-16 py-8 bg-muted/30">
       <div className="container mx-auto px-4">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-foreground">
+        <div className="text-center max-w-2xl mx-auto mb-8">
+          <h2 className="text-2xl md:text-3xl font-heading font-bold mb-4 text-foreground">
             Travelers Love WanderMind
           </h2>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-md md:text-xl">
             Don't just take our word for it. Here's what our global community of adventurers has to say.
           </p>
         </div>

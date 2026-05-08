@@ -13,8 +13,8 @@ export default function Home() {
       <HeroSection />
       <HowItWorks />
       <PopularDestinations />
-      <AIShowcase />
       <TopExperiences />
+      <AIShowcase />
       <Testimonials />
       <StatsSection />
       <Newsletter />

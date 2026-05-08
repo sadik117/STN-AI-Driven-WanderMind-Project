@@ -18,9 +18,9 @@ export function PopularDestinations() {
   });
 
   return (
-    <section className="py-24">
+    <section className="py-8 md:py-12">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+        <div className="flex flex-col md:flex-row items-end justify-center text-center mb-12 gap-4">
           <div className="max-w-2xl">
             <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4 text-foreground">
               Popular Destinations
@@ -29,12 +29,6 @@ export function PopularDestinations() {
               Explore our most loved locations. From pristine beaches to bustling cities, find the perfect spot for your next journey.
             </p>
           </div>
-          <Link href="/destinations">
-            <Button variant="outline" className="gap-2 group">
-              View All Destinations
-              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -65,6 +59,14 @@ export function PopularDestinations() {
               No destinations found.
             </div>
           )}
+        </div>
+        <div className="flex justify-center mt-10">
+          <Link href="/destinations">
+            <Button variant="outline" className="gap-2 group">
+              View All Destinations
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

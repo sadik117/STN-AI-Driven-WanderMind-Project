@@ -49,10 +49,10 @@ export function DashboardSidebar() {
   const currentMenuItems = menuItems[role as keyof typeof menuItems] || menuItems.traveler;
 
   return (
-    <aside className="w-64 border-r bg-card h-[calc(100vh-64px)] sticky top-16 hidden md:flex flex-col">
+    <aside className="w-64 border-r bg-card h-[calc(100vh-64px)] sticky top-10 hidden md:flex flex-col">
       <div className="p-6 flex-1">
         <div className="mb-8">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 ml-3">
             Main Menu
           </p>
           <nav className="space-y-1">

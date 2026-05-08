@@ -63,7 +63,7 @@ export function Navbar() {
     { href: '/destinations', label: 'Destinations', icon: Compass },
     { href: '/experiences', label: 'Experiences', icon: Star },
     { href: '/ai-planner', label: 'AI Planner', icon: Sparkles },
-    { href: '/blog', label: 'Blog', icon: BookOpen },
+    { href: '/blogs', label: 'Blogs', icon: BookOpen },
   ];
 
   const getDashboardLink = () => {

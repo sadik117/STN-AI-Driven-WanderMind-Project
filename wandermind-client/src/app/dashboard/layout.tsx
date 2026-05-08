@@ -42,7 +42,7 @@ export default function DashboardLayout({
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] bg-background">
+    <div className="flex mx-auto px-4 md:px-20 w-full min-h-[calc(100vh-64px)] bg-background">
       <DashboardSidebar />
       <main className="flex-1 p-6 md:p-8 overflow-y-auto pb-24 md:pb-8">
         <div className="max-w-7xl mx-auto">

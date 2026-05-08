@@ -99,6 +99,11 @@ const NATIONALITIES = [
   'Singaporean', 'Filipino', 'Indonesian', 'Egyptian', 'South African',
   'Nigerian', 'Kenyan', 'Argentinian', 'Chilean', 'Colombian', 'Peruvian'
 ];
+ 
+const LANGUAGES = [
+  'English', 'Bengali', 'Spanish', 'French', 'German', 'Chinese', 'Japanese', 
+  'Hindi', 'Arabic', 'Portuguese', 'Russian', 'Italian', 'Korean', 'Turkish'
+];
 
 export default function ProfilePage() {
   const { user: currentUser, isAuthenticated, isLoading: authLoading } = useAuthStore();
@@ -121,6 +126,7 @@ export default function ProfilePage() {
   const [travelStyle, setTravelStyle] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [languages, setLanguages] = useState<string[]>([]);
 
   const { data: profile, isLoading, refetch } = useQuery({
     queryKey: ['user-profile'],
@@ -161,6 +167,7 @@ export default function ProfilePage() {
     setTravelStyle([]);
     setImageFile(null);
     setImagePreview('');
+    setLanguages([]);
   };
 
   const openEditDialog = () => {
@@ -168,6 +175,7 @@ export default function ProfilePage() {
     setBio(user?.role === 'HOST' ? user?.hostProfile?.bio || '' : user?.travelerProfile?.bio || '');
     setNationality(user?.travelerProfile?.nationality || '');
     setTravelStyle(user?.travelerProfile?.travelStyle || []);
+    setLanguages(user?.hostProfile?.languages || []);
     setImagePreview(user?.image || '');
     setIsEditDialogOpen(true);
   };
@@ -196,6 +204,9 @@ export default function ProfilePage() {
     formData.append('bio', bio);
     formData.append('nationality', nationality);
     formData.append('travelStyle', JSON.stringify(travelStyle));
+    if (user?.role === 'HOST') {
+      formData.append('languages', JSON.stringify(languages));
+    }
     if (imageFile) {
       formData.append('image', imageFile);
     }
@@ -211,6 +222,16 @@ export default function ProfilePage() {
 
   const removeTravelStyle = (style: string) => {
     setTravelStyle(travelStyle.filter(s => s !== style));
+  };
+
+  const addLanguage = (lang: string) => {
+    if (!languages.includes(lang) && languages.length < 10) {
+      setLanguages([...languages, lang]);
+    }
+  };
+
+  const removeLanguage = (lang: string) => {
+    setLanguages(languages.filter(l => l !== lang));
   };
 
   const formatDate = (date: string) => {
@@ -373,19 +394,36 @@ export default function ProfilePage() {
                     </div>
                   )}
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">Travel Style:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {user?.travelerProfile?.travelStyle?.length ? (
-                        user.travelerProfile.travelStyle.map((style) => (
-                          <Badge key={style} variant="secondary" className="rounded-full">
-                            {style}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">No preferences set</span>
-                      )}
-                    </div>
+                    {user?.role === 'TRAVELER' && (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-2">Travel Style:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {user?.travelerProfile?.travelStyle?.length ? (
+                            user.travelerProfile.travelStyle.map((style) => (
+                              <Badge key={style} variant="secondary" className="rounded-full">
+                                {style}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-sm text-muted-foreground">No preferences set yet.</span>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
+
+                  {user?.role === 'HOST' && user?.hostProfile?.languages && user.hostProfile.languages.length > 0 && (
+                    <div className="-mt-4">
+                      <p className="text-sm text-muted-foreground mb-2">Languages Spoken:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {user.hostProfile.languages.map((lang) => (
+                          <Badge key={lang} variant="secondary" className="rounded-full bg-purple-500/10 text-purple-600 border-purple-500/20">
+                            {lang}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -639,6 +677,37 @@ export default function ProfilePage() {
               </Select>
               <p className="text-xs text-muted-foreground">Select styles that match your travel preferences</p>
             </div>
+
+            {user?.role === 'HOST' && (
+              <div className="space-y-3">
+                <Label>Languages Spoken</Label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {languages.map((lang) => (
+                    <Badge key={lang} variant="secondary" className="gap-1.5 py-1.5 px-3 rounded-full bg-purple-500/10 text-purple-600 border-purple-500/20">
+                      {lang}
+                      <button
+                        type="button"
+                        onClick={() => removeLanguage(lang)}
+                        className="ml-1 hover:text-destructive transition-colors"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <Select onValueChange={addLanguage}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Add language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.filter(l => !languages.includes(l)).map((lang) => (
+                      <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Add languages you can communicate in as a host</p>
+              </div>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} className="rounded-xl">

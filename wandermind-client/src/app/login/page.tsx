@@ -107,7 +107,7 @@ function LoginContent() {
       const { user, token } = response.data;
       setAuth(user, token);
       toast.success(`Signed in as ${demo.role}`, {
-        duration: 4000,
+        duration: 3000,
       });
       router.push(`/dashboard/${user.role.toLowerCase()}`);
     } catch (error: any) {

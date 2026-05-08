@@ -42,9 +42,9 @@ export default function BlogPage() {
   });
 
   return (
-    <div className="pb-24">
+    <div className="pb-16">
       {/* Blog Hero */}
-      <section className="bg-muted/30 py-20 border-b">
+      <section className="bg-muted/30 py-16 border-b">
         <div className="container mx-auto px-4 text-center">
           <Badge className="mb-4 px-4 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 border-none">
             Travel Stories & Tips
@@ -220,19 +220,6 @@ export default function BlogPage() {
             </div>
           )}
         </div>
-
-        {/* Load More Button */}
-        {data && data.length > 0 && (
-          <div className="text-center mt-12">
-            <Button
-              variant="outline"
-              className="rounded-full px-8 gap-2 group hover:gap-3 transition-all"
-            >
-              Load More Articles
-              <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </div>
-        )}
       </section>
     </div>
   );

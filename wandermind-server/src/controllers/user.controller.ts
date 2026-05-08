@@ -22,7 +22,7 @@ export const getProfile = async (req: AuthRequest, res: Response, next: NextFunc
 
 export const updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    let { name, bio, nationality, travelStyle } = req.body;
+    let { name, bio, nationality, travelStyle, languages } = req.body;
     let image = req.body.image;
 
     if (req.file) {
@@ -33,12 +33,19 @@ export const updateProfile = async (req: AuthRequest, res: Response, next: NextF
       fs.unlinkSync(req.file.path);
     }
 
-    // Parse travelStyle if it comes as string (from FormData)
+    // Parse travelStyle and languages if they come as string (from FormData)
     if (typeof travelStyle === 'string') {
       try {
         travelStyle = JSON.parse(travelStyle);
       } catch (e) {
         travelStyle = [];
+      }
+    }
+    if (typeof languages === 'string') {
+      try {
+        languages = JSON.parse(languages);
+      } catch (e) {
+        languages = [];
       }
     }
 
@@ -51,8 +58,8 @@ export const updateProfile = async (req: AuthRequest, res: Response, next: NextF
     if (req.user!.role === 'HOST') {
       updateData.hostProfile = {
         upsert: {
-          create: { bio: bio || '' },
-          update: { bio: bio || '' },
+          create: { bio: bio || '', languages: languages || [] },
+          update: { bio: bio || '', languages: languages || [] },
         },
       };
     } else {

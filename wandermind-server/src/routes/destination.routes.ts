@@ -9,17 +9,17 @@ import {
   toggleWishlist,
   getWishlist,
 } from '../controllers/destination.controller';
-import { authenticate, requireRole } from '../middleware/auth.middleware';
+import { authenticate, requireRole, authenticateOptional } from '../middleware/auth.middleware';
 
 const router = Router();
 
 
-router.get('/', getDestinations);
-router.get('/featured', getFeaturedDestinations);
+router.get('/', authenticateOptional, getDestinations);
+router.get('/featured', authenticateOptional, getFeaturedDestinations);
 
 router.get('/my-wishlist', authenticate, getWishlist);
 
-router.get('/:slug', getDestinationBySlug);
+router.get('/:slug', authenticateOptional, getDestinationBySlug);
 
 router.post('/:id/wishlist', authenticate, toggleWishlist);
 

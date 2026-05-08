@@ -46,6 +46,21 @@ export const getDestinations = async (req: Request, res: Response, next: NextFun
 
     const response = { success: true, message: 'Destinations fetched', data: destinations, pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum), hasNext: pageNum * limitNum < total, hasPrev: pageNum > 1 } };
     await setCache(cacheKey, response, 3600); // 1 hour cache
+    
+    // Attach wishlist status for logged-in user
+    const userId = (req as AuthRequest).user?.id;
+    if (userId) {
+      const profile = await prisma.travelerProfile.findUnique({
+        where: { userId },
+        select: { wishlist: { select: { id: true } } }
+      });
+      const wishlistIds = new Set(profile?.wishlist.map(d => d.id) || []);
+      response.data = response.data.map((d: any) => ({
+        ...d,
+        isWishlisted: wishlistIds.has(d.id)
+      }));
+    }
+
     res.json(response);
   } catch (err) {
     next(err);
@@ -63,7 +78,23 @@ export const getFeaturedDestinations = async (req: Request, res: Response, next:
       take: 8,
     });
     await setCache('destinations:featured', destinations, 3600);
-    sendSuccess(res, destinations, 'Featured destinations');
+
+    // Attach wishlist status for logged-in user
+    let finalDestinations: any[] = [...destinations];
+    const userId = (req as AuthRequest).user?.id;
+    if (userId) {
+      const profile = await prisma.travelerProfile.findUnique({
+        where: { userId },
+        select: { wishlist: { select: { id: true } } }
+      });
+      const wishlistIds = new Set(profile?.wishlist.map(d => d.id) || []);
+      finalDestinations = destinations.map(d => ({
+        ...d,
+        isWishlisted: wishlistIds.has(d.id)
+      }));
+    }
+
+    sendSuccess(res, finalDestinations, 'Featured destinations');
   } catch (err) {
     next(err);
   }
@@ -86,7 +117,19 @@ export const getDestinationBySlug = async (req: Request, res: Response, next: Ne
     if (!destination) return sendError(res, 'Destination not found', 404);
 
     await setCache(cacheKey, destination, 1800);
-    sendSuccess(res, destination, 'Destination fetched');
+    
+    // Attach wishlist status for logged-in user
+    let finalDestination: any = { ...destination };
+    const userId = (req as AuthRequest).user?.id;
+    if (userId) {
+      const profile = await prisma.travelerProfile.findUnique({
+        where: { userId },
+        select: { wishlist: { where: { id: destination.id }, select: { id: true } } }
+      });
+      finalDestination.isWishlisted = (profile?.wishlist.length || 0) > 0;
+    }
+
+    sendSuccess(res, finalDestination, 'Destination fetched');
   } catch (err) {
     next(err);
   }
@@ -125,27 +168,79 @@ export const deleteDestination = async (req: Request, res: Response, next: NextF
   }
 };
 
-export const toggleWishlist = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const toggleWishlist = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const id = req.params.id as string;
-    const userId = req.user!.id;
+    const userId = req.user?.id;
 
+    if (!userId) {
+      return sendError(res, 'Unauthorized', 401);
+    }
+
+    // Check destination exists
+    const destination = await prisma.destination.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!destination) {
+      return sendError(res, 'Destination not found', 404);
+    }
+
+    // Find traveler profile + current wishlist state
     const profile = await prisma.travelerProfile.findUnique({
       where: { userId },
-      include: { wishlist: { where: { id }, select: { id: true } } },
+      include: {
+        wishlist: {
+          where: { id },
+          select: { id: true },
+        },
+      },
     });
-    if (!profile) return sendError(res, 'Traveler profile not found', 404);
+
+    if (!profile) {
+      return sendError(res, 'Traveler profile not found', 404);
+    }
 
     const isWishlisted = profile.wishlist.length > 0;
+
+    // Toggle wishlist
     await prisma.travelerProfile.update({
       where: { userId },
       data: {
-        wishlist: !isWishlisted
-          ? { connect: { id } }
-          : { disconnect: { id } },
+        wishlist: isWishlisted
+          ? {
+              disconnect: { id },
+            }
+          : {
+              connect: { id },
+            },
       },
     });
-    sendSuccess(res, { wishlisted: !isWishlisted }, isWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
+
+    const updatedWishlisted = !isWishlisted;
+
+    // Clear related cache before response
+    await Promise.all([
+      deleteCache(`wishlist:${userId}`),
+      deleteCachePattern('destinations:*'),
+      deleteCachePattern(`destination:*`),
+    ]);
+
+    return sendSuccess(
+      res,
+      {
+        wishlisted: updatedWishlisted,
+        destinationId: id,
+        message: updatedWishlisted
+          ? 'Added to wishlist'
+          : 'Removed from wishlist'
+      },
+    );
   } catch (err) {
     next(err);
   }
@@ -156,12 +251,12 @@ export const getWishlist = async (req: AuthRequest, res: Response, next: NextFun
   try {
     const userId = req.user?.id;
     if (!userId) return sendError(res, 'Unauthorized', 401);
- 
+
     // Try cache first
     const cacheKey = `wishlist:${userId}`;
     const cached = await getCache(cacheKey);
     if (cached) return sendSuccess(res, cached, 'Wishlist fetched successfully');
- 
+
     const profile = await prisma.travelerProfile.findUnique({
       where: { userId },
       include: {
@@ -187,26 +282,26 @@ export const getWishlist = async (req: AuthRequest, res: Response, next: NextFun
         },
       },
     });
- 
+
     const wishlist = profile?.wishlist ?? [];
- 
+
     const stats = {
       totalDestinations: wishlist.length,
       avgRating:
         wishlist.length > 0
           ? parseFloat(
-              (wishlist.reduce((acc, d) => acc + d.rating, 0) / wishlist.length).toFixed(2)
-            )
+            (wishlist.reduce((acc, d) => acc + d.rating, 0) / wishlist.length).toFixed(2)
+          )
           : 0,
       totalExperiences: wishlist.reduce((acc, d) => acc + d._count.experiences, 0),
       continents: [...new Set(wishlist.map((d) => d.continent))],
     };
- 
+
     const payload = { wishlist, stats };
- 
+
     // Cache for 5 minutes shorter time because it's personal data
     await setCache(cacheKey, payload, 300);
- 
+
     sendSuccess(res, payload, 'Wishlist fetched successfully');
   } catch (err) {
     next(err);

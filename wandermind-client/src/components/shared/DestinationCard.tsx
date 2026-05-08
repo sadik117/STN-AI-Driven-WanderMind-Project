@@ -5,7 +5,7 @@ import { MapPin, Star, Heart, ChevronRight, Users, Camera, Sun, Compass, Sparkle
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -31,45 +31,137 @@ export function DestinationCard({ destination, featured = false }: { destination
   const [optimisticLiked, setOptimisticLiked] = useState(destination.isWishlisted || false);
   const queryClient = useQueryClient();
 
-  // Toggle wishlist mutation
+
+  // Sync state with props when they change (e.g., after a refresh or background refetch)
+  useEffect(() => {
+    setOptimisticLiked(destination.isWishlisted || false);
+  }, [destination.isWishlisted]);
+
   const toggleWishlistMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await api.post(`/destinations/${id}/wishlist`);
       return res.data;
     },
+
     onMutate: async (id) => {
-      // Optimistic update
-      setOptimisticLiked( prev => !prev );
-      
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['destinations'] });
-      
-      // Snapshot previous value
+      const nextValue = !optimisticLiked;
+
+      // Optimistic UI
+      setOptimisticLiked(nextValue);
+
+      // Cancel running queries
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ['destinations'] }),
+        queryClient.cancelQueries({ queryKey: ['featured-destinations'] }),
+        queryClient.cancelQueries({ queryKey: ['wishlist'] }),
+      ]);
+
+      // Snapshot previous cache
       const previousDestinations = queryClient.getQueryData(['destinations']);
-      
-      // Optimistically update to new value
-      queryClient.setQueryData(['destinations'], (old: any) => {
-        if (old?.data) {
-          return {
-            ...old,
-            data: old.data.map((dest: DestinationProps) =>
-              dest.id === id ? { ...dest, isWishlisted: !optimisticLiked } : dest
-            )
-          };
-        }
-        return old;
+      const previousFeatured = queryClient.getQueryData(['featured-destinations']);
+      const previousWishlist = queryClient.getQueryData(['wishlist']);
+
+      // Update helper
+      const updateDestination = (d: any) =>
+        d.id === id
+          ? {
+            ...d,
+            isWishlisted: nextValue,
+          }
+          : d;
+
+      // Update all caches
+      const queryKeys = [
+        ['destinations'],
+        ['featured-destinations'],
+      ];
+
+      queryKeys.forEach((key) => {
+        queryClient.setQueryData(key, (old: any) => {
+          if (!old) return old;
+
+          // Array response
+          if (Array.isArray(old)) {
+            return old.map(updateDestination);
+          }
+
+          // Paginated response
+          if (old.data && Array.isArray(old.data)) {
+            return {
+              ...old,
+              data: old.data.map(updateDestination),
+            };
+          }
+
+          return old;
+        });
       });
-      
-      return { previousDestinations };
+
+      // Remove from wishlist instantly
+      queryClient.setQueryData(['wishlist'], (old: any) => {
+        if (!old?.data?.wishlist) return old;
+
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            wishlist: nextValue
+              ? old.data.wishlist
+              : old.data.wishlist.filter((d: any) => d.id !== id),
+          },
+        };
+      });
+
+      return {
+        previousDestinations,
+        previousFeatured,
+        previousWishlist,
+        previousLiked: optimisticLiked,
+      };
     },
-    onSuccess: (data, id) => {
-      toast.success(data.message || (optimisticLiked ? 'Added to wishlist' : 'Removed from wishlist'));
-    },
+
     onError: (error: any, id, context) => {
-      // Rollback on error
-      setOptimisticLiked(!optimisticLiked);
-      queryClient.setQueryData(['destinations'], context?.previousDestinations);
-      toast.error(error.response?.data?.message || 'Failed to update wishlist');
+      // Restore previous state
+      setOptimisticLiked(context?.previousLiked ?? false);
+
+      queryClient.setQueryData(
+        ['destinations'],
+        context?.previousDestinations
+      );
+
+      queryClient.setQueryData(
+        ['featured-destinations'],
+        context?.previousFeatured
+      );
+
+      queryClient.setQueryData(
+        ['wishlist'],
+        context?.previousWishlist
+      );
+
+      toast.error(
+        error.response?.data?.message ||
+        'Failed to update wishlist'
+      );
+    },
+
+    onSuccess: (data: any) => {
+      toast.success(data?.message);
+    },
+
+    onSettled: () => {
+      // Always refetch fresh data
+      queryClient.invalidateQueries({
+        queryKey: ['destinations'],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ['featured-destinations'],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ['wishlist'],
+      });
     },
   });
 
@@ -83,20 +175,9 @@ export function DestinationCard({ destination, featured = false }: { destination
   const getRatingColor = (rating: number) => {
     if (rating >= 4.5) return 'from-amber-500 to-orange-500';
     if (rating >= 4.0) return 'from-emerald-500 to-teal-500';
-    return 'from-blue-500 to-cyan-500';
+    return 'from-blue-500 to-cyan-500'; 
   };
 
-  // Get continent icon
-  const getContinentIcon = (continent: string) => {
-    switch (continent.toLowerCase()) {
-      case 'europe': return <Compass className="h-3 w-3" />;
-      case 'asia': return <Sun className="h-3 w-3" />;
-      case 'africa': return <Camera className="h-3 w-3" />;
-      case 'north america': return <Users className="h-3 w-3" />;
-      case 'south america': return <Sparkles className="h-3 w-3" />;
-      default: return <MapPin className="h-3 w-3" />;
-    }
-  };
 
   return (
     <motion.div
@@ -108,7 +189,7 @@ export function DestinationCard({ destination, featured = false }: { destination
       onHoverEnd={() => setIsHovered(false)}
     >
       <Card className="group overflow-hidden flex flex-col h-[400px] border-border/50 hover:border-primary/30 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 relative bg-card rounded-3xl">
-        
+
         {/* Featured Badge */}
         {featured && (
           <div className="absolute top-4 left-4 z-20">
@@ -122,18 +203,18 @@ export function DestinationCard({ destination, featured = false }: { destination
         {/* Image Container */}
         <div className="relative h-52 w-full overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          
+
           <img
             src={destination.images[0] || 'https://images.unsplash.com/photo-1488085061387-422e29b40080?q=80&w=1031&auto=format&fit=crop'}
             alt={destination.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
           />
-          
+
           {/* Image Overlay Gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          
+
           {/* Rating Badge - Animated */}
-          <motion.div 
+          <motion.div
             className="absolute top-4 right-4 z-20"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -146,13 +227,13 @@ export function DestinationCard({ destination, featured = false }: { destination
           </motion.div>
 
           {/* Quick Info Overlay on Hover */}
-          <motion.div 
+          <motion.div
             className="absolute inset-0 flex items-center justify-center z-20 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
             initial={false}
           >
-            <Button 
-              variant="default" 
-              size="sm" 
+            <Button
+              variant="default"
+              size="sm"
               className="rounded-full gap-2 shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300"
               asChild
             >
@@ -163,13 +244,13 @@ export function DestinationCard({ destination, featured = false }: { destination
             </Button>
           </motion.div>
         </div>
-        
+
         {/* Content */}
         <CardContent className="flex-1 p-5 pb-2">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex-1">
               <h3 className="font-heading font-bold text-xl line-clamp-1 group-hover:text-primary transition-colors duration-300">
-                {destination.name} 
+                {destination.name}
               </h3>
               <div className="flex items-center text-muted-foreground text-sm mt-1">
                 <MapPin className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
@@ -177,12 +258,12 @@ export function DestinationCard({ destination, featured = false }: { destination
               </div>
             </div>
           </div>
-          
+
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5 mt-3">
             {destination.tags.slice(0, 3).map((tag, idx) => (
-              <motion.span 
-                key={tag} 
+              <motion.span
+                key={tag}
                 className="text-xs bg-muted/80 hover:bg-primary/10 px-2.5 py-1 rounded-full text-muted-foreground hover:text-primary transition-all cursor-default"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -206,10 +287,10 @@ export function DestinationCard({ destination, featured = false }: { destination
             </div>
           )}
         </CardContent>
-        
+
         {/* Footer with Price and Wishlist Button */}
         <CardFooter className="p-5 pt-3 flex items-center justify-between border-t border-border/30 mt-2">
-          <motion.div 
+          <motion.div
             className="flex items-baseline gap-0.5"
             whileHover={{ scale: 1.05 }}
           >
@@ -217,15 +298,14 @@ export function DestinationCard({ destination, featured = false }: { destination
             <span className="font-bold text-lg text-primary">${destination.avgCostPerDay}</span>
             <span className="text-sm text-muted-foreground">/day</span>
           </motion.div>
-          
+
           {/* Save/Wishlist Button */}
           <motion.button
             onClick={handleWishlistClick}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
-              optimisticLiked 
-                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${optimisticLiked
+                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
                 : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary'
-            }`}
+              }`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             disabled={toggleWishlistMutation.isPending}
@@ -253,9 +333,9 @@ export function DestinationGrid({ destinations, featured = false }: { destinatio
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
       {destinations.map((destination, index) => (
-        <DestinationCard 
-          key={destination.id} 
-          destination={destination} 
+        <DestinationCard
+          key={destination.id}
+          destination={destination}
           featured={featured && index === 0}
         />
       ))}
@@ -290,26 +370,44 @@ export function HorizontalDestinationCard({ destination }: { destination: Destin
   const [optimisticLiked, setOptimisticLiked] = useState(destination.isWishlisted || false);
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    setOptimisticLiked(destination.isWishlisted || false);
+  }, [destination.isWishlisted]);
+
   const toggleWishlistMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await api.post(`/destinations/${id}/wishlist`);
       return res.data;
     },
     onMutate: async (id) => {
-      setOptimisticLiked(!optimisticLiked);
+      const nextValue = !optimisticLiked;
+      setOptimisticLiked(nextValue);
+
       await queryClient.cancelQueries({ queryKey: ['destinations'] });
+      await queryClient.cancelQueries({ queryKey: ['featured-destinations'] });
+
+      // Snapshot previous value
       const previousDestinations = queryClient.getQueryData(['destinations']);
-      queryClient.setQueryData(['destinations'], (old: any) => {
-        if (old?.data) {
-          return {
-            ...old,
-            data: old.data.map((dest: DestinationProps) =>
-              dest.id === id ? { ...dest, isWishlisted: !optimisticLiked } : dest
-            )
-          };
-        }
-        return old;
-      });
+      const queryKeys = [['destinations'], ['featured-destinations']];
+
+      for (const key of queryKeys) {
+        queryClient.setQueryData(key, (old: any) => {
+          if (!old) return old;
+
+          const updateDest = (d: DestinationProps) =>
+            d.id === id ? { ...d, isWishlisted: nextValue } : d;
+
+          if (Array.isArray(old)) return old.map(updateDest);
+
+          if (old.data && Array.isArray(old.data)) {
+            return {
+              ...old,
+              data: old.data.map(updateDest)
+            };
+          }
+          return old;
+        });
+      }
       return { previousDestinations };
     },
     onError: (error: any) => {
@@ -317,7 +415,8 @@ export function HorizontalDestinationCard({ destination }: { destination: Destin
       toast.error(error.response?.data?.message || 'Failed to update wishlist');
     },
     onSuccess: (data) => {
-      toast.success(data.message);
+      // Prioritize the message from the server, otherwise use the new state for the message
+      toast.success(data.message || (optimisticLiked ? 'Added to wishlist' : 'Removed from wishlist'));
     },
   });
 
@@ -334,13 +433,13 @@ export function HorizontalDestinationCard({ destination }: { destination: Destin
     >
       <Link href={`/destinations/${destination.slug}`}>
         <div className="relative h-96">
-          <img 
-            src={destination.images[0]} 
+          <img
+            src={destination.images[0]}
             alt={destination.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-          
+
           {/* Wishlist Button on Horizontal Card */}
           <button
             onClick={handleWishlistClick}
@@ -348,7 +447,7 @@ export function HorizontalDestinationCard({ destination }: { destination: Destin
           >
             <Heart className={`h-4 w-4 transition-all ${optimisticLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
           </button>
-          
+
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
             <div className="flex items-center gap-1 mb-2">
               <MapPin className="h-3 w-3" />

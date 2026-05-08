@@ -28,7 +28,7 @@ export function TopExperiences() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1  md:grid-cols-3 gap-6">
           {isLoading ? (
             Array(4).fill(0).map((_, i) => (
               <div key={i} className="flex flex-col space-y-3">
@@ -48,7 +48,7 @@ export function TopExperiences() {
               Failed to load experiences. Please try again later.
             </div>
           ) : data && data.length > 0 ? (
-            data.slice(0, 4).map((experience) => (
+            data.slice(0, 6).map((experience) => (
               <ExperienceCard key={experience.id} experience={experience} />
             ))
           ) : (

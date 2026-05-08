@@ -135,7 +135,7 @@ export default function RegisterPage() {
 
             <div className="grid grid-cols-1 gap-4">
               <Button variant="outline" className="h-12 rounded-xl border-border/50 gap-2 font-semibold">
-                <Globe className="h-5 w-5 text-red-500" /> Google
+                <Globe className="h-5 w-5 text-red-500" /> Sign up with Google
               </Button>
             </div>
           </CardContent>

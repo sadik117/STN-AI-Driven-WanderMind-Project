@@ -20,6 +20,7 @@ import aiRoutes from './routes/ai.routes';
 import adminRoutes from './routes/admin.routes';
 import userRoutes from './routes/user.routes';
 import uploadRoutes from './routes/upload.routes';
+import statsRoutes from './routes/stats.routes';
 import fs from 'fs';
 
 dotenv.config();
@@ -74,6 +75,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/stats', statsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

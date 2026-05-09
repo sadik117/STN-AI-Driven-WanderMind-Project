@@ -1,66 +1,160 @@
+'use client';
+
 import Link from 'next/link';
-import { Map, Globe, Mail } from 'lucide-react';
+import { 
+  Map,  
+  Mail, 
+  Heart, 
+  Phone, 
+  MapPin, 
+  ChevronRight, 
+  Sparkles,
+  Info,
+  HelpCircle,
+  Shield,
+  BookOpen
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export function Footer() {
+  const footerLinks = {
+    explore: [
+      { name: 'Destinations', href: '/destinations', icon: MapPin },
+      { name: 'Experiences', href: '/experiences', icon: Sparkles },
+      { name: 'AI Trip Planner', href: '/ai-planner', icon: Map },
+      { name: 'Travel Blog', href: '/blog', icon: BookOpen },
+    ],
+    company: [
+      { name: 'About Us', href: '/about', icon: Info },
+      { name: 'FAQs', href: '/faq', icon: HelpCircle },
+      { name: 'Contact', href: '/contact', icon: Mail },
+      { name: 'Privacy Policy', href: '/privacy', icon: Shield },
+    ]
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+  };
+
   return (
-    <footer className="bg-muted border-t">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="md:col-span-1 space-y-4">
+    <footer className="relative bg-gradient-to-b from-background via-background to-primary/5 border-t border-border/50 overflow-hidden">
+      {/* Background Decorations */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="container mx-auto px-4 relative z-10">
+        {/* Main Footer Content */}
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid grid-cols-1 md:grid-cols-12 gap-8 py-8 md:py-12"
+        >
+          {/* Brand Section */}
+          <motion.div variants={itemVariants} className="md:col-span-6 space-y-4">
             <Link href="/" className="flex items-center gap-2 group w-fit">
-              <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
-                <Map className="h-5 w-5" />
-              </div>
-              <span className="font-heading font-bold text-xl tracking-tight text-foreground">
+              <motion.div 
+                className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-2 rounded-xl shadow-lg"
+                whileHover={{ scale: 1.05, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <Map className="h-6 w-6" />
+              </motion.div>
+              <span className="font-heading font-bold text-2xl tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                 WanderMind
               </span>
             </Link>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-md">
               Your AI-powered travel companion. Discover destinations, plan personalized itineraries, and book unforgettable experiences.
             </p>
-            <div className="flex gap-4 pt-2">
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors"><Globe className="h-5 w-5" /></Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors"><Mail className="h-5 w-5" /></Link>
+            
+            {/* Contact Info */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Mail className="h-4 w-4 text-primary" />
+                <span>sadiksourov11@gmail.com</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Phone className="h-4 w-4 text-primary" />
+                <span>+8801717375585</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span>Rajshahi, Bangladesh</span>
+              </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div>
-            <h3 className="font-semibold mb-4 text-foreground">Explore</h3>
+          {/* Explore Links */}
+          <motion.div variants={itemVariants} className="col-span-4">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              Explore
+            </h3>
             <ul className="space-y-3">
-              <li><Link href="/destinations" className="text-sm text-muted-foreground hover:text-primary transition-colors">Destinations</Link></li>
-              <li><Link href="/experiences" className="text-sm text-muted-foreground hover:text-primary transition-colors">Experiences</Link></li>
-              <li><Link href="/plan" className="text-sm text-muted-foreground hover:text-primary transition-colors">AI Trip Planner</Link></li>
-              <li><Link href="/blog" className="text-sm text-muted-foreground hover:text-primary transition-colors">Travel Blog</Link></li>
+              {footerLinks.explore.map((link) => (
+                <li key={link.name}>
+                  <Link 
+                    href={link.href} 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 group"
+                  >
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </motion.div>
 
-          <div>
-            <h3 className="font-semibold mb-4 text-foreground">Hosts</h3>
+          {/* Company Links */}
+          <motion.div variants={itemVariants} className="col-span-2">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Info className="h-4 w-4 text-primary" />
+              Company
+            </h3>
             <ul className="space-y-3">
-              <li><Link href="/auth/register" className="text-sm text-muted-foreground hover:text-primary transition-colors">Become a Host</Link></li>
-              <li><Link href="/dashboard/host" className="text-sm text-muted-foreground hover:text-primary transition-colors">Host Dashboard</Link></li>
-              <li><Link href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">Host Guidelines</Link></li>
+              {footerLinks.company.map((link) => (
+                <li key={link.name}>
+                  <Link 
+                    href={link.href} 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 group"
+                  >
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </motion.div>
+        </motion.div>
 
-          <div>
-            <h3 className="font-semibold mb-4 text-foreground">Support</h3>
-            <ul className="space-y-3">
-              <li><Link href="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
-              <li><Link href="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">Contact</Link></li>
-              <li><Link href="/faq" className="text-sm text-muted-foreground hover:text-primary transition-colors">Help & FAQ</Link></li>
-              <li><Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link></li>
-            </ul>
-          </div>
-        </div>
-        
-        <div className="border-t mt-12 pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} WanderMind. All rights reserved.</p>
-          <div className="flex gap-4 mt-4 md:mt-0">
-            <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
-            <Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
-          </div>
-        </div>
+        {/* Bottom Bar */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="border-t border-border/50 py-6 flex flex-col  md:flex-row items-center justify-center gap-4 text-xs text-muted-foreground"
+        >
+          <p className="flex items-center gap-1">
+            © {new Date().getFullYear()} WanderMind. All rights reserved. Made with{' '}
+            <Heart className="h-3 w-3 inline text-red-500 animate-pulse" /> for travelers.
+          </p>
+        </motion.div>
       </div>
     </footer>
   );

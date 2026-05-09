@@ -110,13 +110,41 @@ export const updateUserRole = async (req: Request, res: Response, next: NextFunc
 
 export const getAllBookings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page = '1', limit = '10' } = req.query as Record<string, string>;
+    const { page = '1', limit = '10', status = '', search = '' } = req.query as Record<string, string>;
     const pageNum = parseInt(page), limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {
+      ...(status && status !== 'ALL' && { status: status as any }),
+      ...(search && {
+        OR: [
+          { user: { name: { contains: search, mode: 'insensitive' } } },
+          { user: { email: { contains: search, mode: 'insensitive' } } },
+          { experience: { title: { contains: search, mode: 'insensitive' } } },
+        ],
+      }),
+    };
+
     const [bookings, total, statusGroups, revenueResult] = await Promise.all([
-      prisma.booking.findMany({ skip: (pageNum - 1) * limitNum, take: limitNum, orderBy: { createdAt: 'desc' }, include: { user: { select: { name: true, email: true } }, experience: { select: { title: true, price: true } } } }),
-      prisma.booking.count(),
-      prisma.booking.groupBy({ by: ['status'], _count: { status: true } }),
-      prisma.booking.aggregate({ _sum: { totalPrice: true }, where: { status: 'COMPLETED' } }),
+      prisma.booking.findMany({ 
+        where, 
+        skip, 
+        take: limitNum, 
+        orderBy: { createdAt: 'desc' }, 
+        include: { 
+          user: { select: { name: true, email: true } }, 
+          experience: { select: { title: true, price: true } } 
+        } 
+      }),
+      prisma.booking.count({ where }),
+      prisma.booking.groupBy({ 
+        by: ['status'], 
+        _count: { status: true } 
+      }),
+      prisma.booking.aggregate({ 
+        _sum: { totalPrice: true }, 
+        where: { status: 'COMPLETED' } 
+      }),
     ]);
 
     const stats = statusGroups.reduce((acc: any, group) => {

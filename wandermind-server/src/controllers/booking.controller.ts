@@ -23,7 +23,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
     const notification = await prisma.notification.create({
       data: {
         userId: hostUserId,
-        title: 'New Booking! 🎉',
+        title: 'New Booking!',
         message: `${req.user!.name} booked "${experience.title}" for ${new Date(date).toLocaleDateString()}`,
         type: 'booking',
         link: `/dashboard/host/bookings/${booking.id}`,
@@ -46,13 +46,69 @@ export const getMyBookings = async (req: AuthRequest, res: Response, next: NextF
     const [bookings, total] = await Promise.all([
       prisma.booking.findMany({
         where, skip, take: limitNum, orderBy: { createdAt: 'desc' },
-        include: { experience: { include: { destination: { select: { name: true } } } } },
+        include: { 
+          experience: { 
+            include: { 
+              destination: { select: { name: true } },
+              host: { include: { user: { select: { name: true, image: true } } } }
+            } 
+          } 
+        },
       }),
       prisma.booking.count({ where }),
     ]);
     sendPaginated(res, bookings, total, pageNum, limitNum, 'Bookings fetched');
   } catch (err) { next(err); }
 };
+
+export const getHostBookings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { page = '1', limit = '10', search = '' } = req.query as Record<string, string>;
+    const pageNum = parseInt(page), limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get the host profile ID for the current user
+    const hostProfile = await prisma.hostProfile.findUnique({
+      where: { userId: req.user!.id }
+    });
+
+    if (!hostProfile) return sendError(res, 'Host profile not found', 404);
+
+    const where: any = {
+      experience: { hostId: hostProfile.id },
+      ...(search && {
+        OR: [
+          { user: { name: { contains: search, mode: 'insensitive' } } },
+          { user: { email: { contains: search, mode: 'insensitive' } } },
+          { experience: { title: { contains: search, mode: 'insensitive' } } },
+        ]
+      })
+    };
+
+    const [bookings, total] = await Promise.all([
+      prisma.booking.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { name: true, email: true, image: true } },
+          experience: { select: { id: true, title: true } }
+        }
+      }),
+      prisma.booking.count({ where })
+    ]);
+
+    // Format data to match frontend expectations (traveler.user.name etc)
+    const formattedBookings = bookings.map(b => ({
+      ...b,
+      traveler: { user: b.user }
+    }));
+
+    sendPaginated(res, formattedBookings, total, pageNum, limitNum, 'Host bookings fetched');
+  } catch (err) { next(err); }
+};
+
 
 export const getBookingById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -65,12 +121,11 @@ export const getBookingById = async (req: AuthRequest, res: Response, next: Next
   } catch (err) { next(err); }
 };
 
-// Add to your admin controller file
 
 export const exportBookingsReport = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const status = req.query.status as string;
-    
+
     let where: any = {};
     if (status && status !== 'ALL') {
       where.status = status;
@@ -102,7 +157,7 @@ export const exportBookingsReport = async (req: Request, res: Response, next: Ne
     ]);
 
     const csvContent = [csvHeaders, ...csvRows].map(row => row.join(',')).join('\n');
-    
+
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=bookings_${Date.now()}.csv`);
     res.send(csvContent);
@@ -112,90 +167,107 @@ export const exportBookingsReport = async (req: Request, res: Response, next: Ne
 };
 
 // Update your updateBookingStatus with better notification handling
-export const updateBookingStatus = async (req: Request, res: Response, next: NextFunction) => {
+export const updateBookingStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { status, notes } = req.body;
-    
+    const userRole = req.user!.role;
+    const userId = req.user!.id;
+
     // Validate status
     if (!['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(status)) {
       return sendError(res, 'Invalid status', 400);
     }
 
-    // Fetch existing booking to handle notes correctly
+    // Fetch existing booking with experience and host info
     const existingBooking = await prisma.booking.findUnique({
-      where: { id: req.params.id as string }
+      where: { id: req.params.id as string },
+      include: { 
+        experience: {
+          include: { host: true }
+        }
+      }
     });
 
     if (!existingBooking) return sendError(res, 'Booking not found', 404);
+
+    const isHostOfExperience = existingBooking.experience.host.userId === userId;
+
+    // RBAC: Logic for status changes
+    if (status === 'CONFIRMED') {
+      if (userRole !== 'ADMIN') {
+        return sendError(res, 'Only Admin can confirm bookings', 403);
+      }
+    }
+
+    if (status === 'COMPLETED') {
+      if (!isHostOfExperience) {
+        return sendError(res, 'Only the Host of this experience can mark it as completed', 403);
+      }
+    }
 
     const booking = await prisma.booking.update({
       where: { id: req.params.id as string },
       data: { 
         status,
-        notes: notes ? `${existingBooking.notes || ''}\n\n[Admin Note - ${new Date().toISOString()}]: ${notes}`.trim() : existingBooking.notes
+        notes: notes ? `${existingBooking.notes || ''}\n\n[Note - ${new Date().toISOString()}]: ${notes}`.trim() : existingBooking.notes
       },
       include: { 
         user: true, 
-        experience: {
-          include: { host: true }
-        }
+        experience: { include: { host: true } }
       },
     });
 
-    // Create notification for traveler
-    const getNotificationMessage = () => {
+    // Create notifications
+    const io = req.app.get('io');
+    
+    // 1. Notify Traveler
+    const getTravelerNotification = () => {
       switch (status) {
         case 'CONFIRMED':
           return {
             title: 'Booking Confirmed',
-            message: `Great news! Your booking for "${booking.experience.title}" has been confirmed. Get ready for an amazing experience!`
+            message: `Your booking for "${booking.experience.title}" has been confirmed by Admin.`
           };
         case 'CANCELLED':
           return {
             title: 'Booking Cancelled',
-            message: `Your booking for "${booking.experience.title}" has been cancelled. Any payments made will be refunded within 5-7 business days.`
+            message: `Your booking for "${booking.experience.title}" has been cancelled.`
           };
         case 'COMPLETED':
           return {
-            title: 'Booking Completed',
-            message: `Your experience "${booking.experience.title}" has been completed. We'd love to hear your feedback!`
+            title: 'Experience Completed',
+            message: `Your experience "${booking.experience.title}" is marked as completed. We'd love to hear your feedback!`
           };
-        default:
-          return {
-            title: 'Booking Updated',
-            message: `Your booking for "${booking.experience.title}" has been updated to ${status.toLowerCase()}.`
-          };
+        default: return null;
       }
     };
 
-    const notificationMessage = getNotificationMessage();
-    
-    const notification = await prisma.notification.create({
-      data: {
-        userId: booking.userId,
-        title: notificationMessage.title,
-        message: notificationMessage.message,
-        type: 'BOOKING_UPDATE',
-        link: `/dashboard/traveler/bookings/${booking.id}`,
-      },
-    });
-
-    // Send real-time notification via socket
-    const io = req.app.get('io');
-    io.to(`user:${booking.userId}`).emit('notification', notification);
-    
-    // Also notify host if booking is confirmed or cancelled
-    if (booking.experience.hostId && (status === 'CONFIRMED' || status === 'CANCELLED')) {
-      const hostNotification = await prisma.notification.create({
+    const travelerNotifData = getTravelerNotification();
+    if (travelerNotifData) {
+      const travelerNotif = await prisma.notification.create({
         data: {
-          userId: booking.experience.hostId,
-          title: status === 'CONFIRMED' ? 'Booking Confirmed' : 'Booking Cancelled',
-          message: `A booking for "${booking.experience.title}" has been ${status.toLowerCase()} by admin.`,
+          userId: booking.userId,
+          title: travelerNotifData.title,
+          message: travelerNotifData.message,
+          type: 'BOOKING_UPDATE',
+          link: `/dashboard/traveler/bookings/${booking.id}`,
+        },
+      });
+      io.to(`user:${booking.userId}`).emit('notification', travelerNotif);
+    }
+
+    // 2. Notify Host if Admin confirms or cancels
+    if (userRole === 'ADMIN' && (status === 'CONFIRMED' || status === 'CANCELLED')) {
+      const hostNotif = await prisma.notification.create({
+        data: {
+          userId: booking.experience.host.userId,
+          title: `Booking ${status === 'CONFIRMED' ? 'Confirmed' : 'Cancelled'}`,
+          message: `The booking for "${booking.experience.title}" has been ${status.toLowerCase()} by Admin.`,
           type: 'BOOKING_UPDATE',
           link: `/dashboard/host/bookings/${booking.id}`,
         },
       });
-      io.to(`user:${booking.experience.hostId}`).emit('notification', hostNotification);
+      io.to(`user:${booking.experience.host.userId}`).emit('notification', hostNotif);
     }
 
     sendSuccess(res, booking, `Booking ${status.toLowerCase()} successfully`);

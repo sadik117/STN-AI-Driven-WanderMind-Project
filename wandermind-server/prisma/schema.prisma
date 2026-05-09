@@ -114,19 +114,19 @@ model Experience {
 }
 
 model Booking {
-  id            String        @id @default(cuid())
-  userId        String
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  experienceId  String
-  experience    Experience    @relation(fields: [experienceId], references: [id], onDelete: Cascade)
-  date          DateTime
-  guests        Int
-  totalPrice    Float
-  status        BookingStatus @default(PENDING)
-  paymentStatus String        @default("unpaid")
-  notes         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experienceId    String
+  experience      Experience    @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  date            DateTime
+  guests          Int
+  totalPrice      Float
+  status          BookingStatus @default(PENDING)
+  notes           String?
+  review          Review?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 model Itinerary {
@@ -154,6 +154,8 @@ model Review {
   destination   Destination? @relation(fields: [destinationId], references: [id])
   experienceId  String?
   experience    Experience?  @relation(fields: [experienceId], references: [id])
+  bookingId     String?      @unique
+  booking       Booking?     @relation(fields: [bookingId], references: [id])
   rating        Float
   content       String
   createdAt     DateTime     @default(now())

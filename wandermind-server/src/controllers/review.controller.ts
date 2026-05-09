@@ -19,22 +19,61 @@ export const getReviews = async (req: Request, res: Response, next: NextFunction
 
 export const createReview = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const { bookingId, rating, content, experienceId, destinationId } = req.body;
+
+    if (bookingId) {
+      const booking = await prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: { review: true }
+      });
+
+      if (!booking) return sendError(res, 'Booking not found', 404);
+      if (booking.userId !== req.user!.id) return sendError(res, 'Unauthorized', 403);
+      if (booking.status !== 'COMPLETED') return sendError(res, 'You can only review completed experiences', 400);
+      if (booking.review) return sendError(res, 'You have already reviewed this booking', 400);
+    }
+
     const review = await prisma.review.create({
-      data: { ...req.body, authorId: req.user!.id },
+      data: { 
+        rating, 
+        content, 
+        authorId: req.user!.id,
+        experienceId,
+        destinationId,
+        bookingId
+      },
       include: { author: { select: { name: true, image: true } } },
     });
 
     // Update rating average
-    if (req.body.destinationId) {
-      const agg = await prisma.review.aggregate({ where: { destinationId: req.body.destinationId }, _avg: { rating: true }, _count: true });
-      await prisma.destination.update({ where: { id: req.body.destinationId }, data: { rating: agg._avg.rating || 0, reviewCount: agg._count } });
+    if (destinationId) {
+      const agg = await prisma.review.aggregate({ where: { destinationId }, _avg: { rating: true }, _count: true });
+      await prisma.destination.update({ where: { id: destinationId }, data: { rating: agg._avg.rating || 0, reviewCount: agg._count } });
     }
-    if (req.body.experienceId) {
-      const agg = await prisma.review.aggregate({ where: { experienceId: req.body.experienceId }, _avg: { rating: true }, _count: true });
-      await prisma.experience.update({ where: { id: req.body.experienceId }, data: { rating: agg._avg.rating || 0, reviewCount: agg._count } });
+    if (experienceId) {
+      const agg = await prisma.review.aggregate({ where: { experienceId }, _avg: { rating: true }, _count: true });
+      await prisma.experience.update({ where: { id: experienceId }, data: { rating: agg._avg.rating || 0, reviewCount: agg._count } });
     }
 
-    sendSuccess(res, review, 'Review submitted', 201);
+    // Notify Host if it's an experience review
+    if (experienceId) {
+      const experience = await prisma.experience.findUnique({ where: { id: experienceId }, include: { host: true } });
+      if (experience) {
+        const notification = await prisma.notification.create({
+          data: {
+            userId: experience.host.userId,
+            title: 'New Review!',
+            message: `${req.user!.name} left a ${rating}-star review for "${experience.title}"`,
+            type: 'REVIEW',
+            link: `/dashboard/host/experiences/${experienceId}`,
+          }
+        });
+        const io = req.app.get('io');
+        if (io) io.to(`user:${experience.host.userId}`).emit('notification', notification);
+      }
+    }
+
+    sendSuccess(res, review, 'Review submitted successfully', 201);
   } catch (err) { next(err); }
 };
 

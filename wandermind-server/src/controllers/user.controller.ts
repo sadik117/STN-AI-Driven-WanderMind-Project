@@ -104,8 +104,33 @@ export const getNotifications = async (req: AuthRequest, res: Response, next: Ne
 
 export const markNotificationRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const notification = await prisma.notification.findUnique({ where: { id: req.params.id as string } });
+    if (!notification) return sendError(res, 'Notification not found', 404);
+    if (notification.userId !== req.user!.id) return sendError(res, 'Unauthorized', 403);
+
     await prisma.notification.update({ where: { id: req.params.id as string }, data: { read: true } });
     sendSuccess(res, null, 'Notification marked as read');
+  } catch (err) { next(err); }
+};
+
+export const markAllNotificationsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    await prisma.notification.updateMany({
+      where: { userId: req.user!.id, read: false },
+      data: { read: true }
+    });
+    sendSuccess(res, null, 'All notifications marked as read');
+  } catch (err) { next(err); }
+};
+
+export const deleteNotification = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const notification = await prisma.notification.findUnique({ where: { id: req.params.id as string } });
+    if (!notification) return sendError(res, 'Notification not found', 404);
+    if (notification.userId !== req.user!.id) return sendError(res, 'Unauthorized', 403);
+
+    await prisma.notification.delete({ where: { id: req.params.id as string } });
+    sendSuccess(res, null, 'Notification deleted');
   } catch (err) { next(err); }
 };
 

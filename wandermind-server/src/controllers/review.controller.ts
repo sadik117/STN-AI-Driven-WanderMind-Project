@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { sendSuccess, sendError, sendPaginated } from '../utils/response';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { deleteCachePattern } from '../lib/redis';
 
 export const getReviews = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -23,14 +24,12 @@ export const createReview = async (req: AuthRequest, res: Response, next: NextFu
 
     if (bookingId) {
       const booking = await prisma.booking.findUnique({
-        where: { id: bookingId },
-        include: { review: true }
+        where: { id: bookingId }
       });
 
       if (!booking) return sendError(res, 'Booking not found', 404);
       if (booking.userId !== req.user!.id) return sendError(res, 'Unauthorized', 403);
       if (booking.status !== 'COMPLETED') return sendError(res, 'You can only review completed experiences', 400);
-      if (booking.review) return sendError(res, 'You have already reviewed this booking', 400);
     }
 
     const review = await prisma.review.create({
@@ -40,7 +39,6 @@ export const createReview = async (req: AuthRequest, res: Response, next: NextFu
         authorId: req.user!.id,
         experienceId,
         destinationId,
-        bookingId
       },
       include: { author: { select: { name: true, image: true } } },
     });
@@ -73,16 +71,25 @@ export const createReview = async (req: AuthRequest, res: Response, next: NextFu
       }
     }
 
+    // Invalidate caches
+    await deleteCachePattern('destinations:*');
+    await deleteCachePattern('experiences:*');
+
     sendSuccess(res, review, 'Review submitted successfully', 201);
   } catch (err) { next(err); }
 };
 
 export const deleteReview = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const review = await prisma.review.findUnique({ where: { id: req.params.id } });
+    const review = await prisma.review.findUnique({ where: { id: req.params.id as any } });
     if (!review) return sendError(res, 'Review not found', 404);
     if (review.authorId !== req.user!.id && req.user!.role !== 'ADMIN') return sendError(res, 'Not authorized', 403);
-    await prisma.review.delete({ where: { id: req.params.id } });
+    await prisma.review.delete({ where: { id: req.params.id as any } });
+
+    // Invalidate caches
+    await deleteCachePattern('destinations:*');
+    await deleteCachePattern('experiences:*');
+
     sendSuccess(res, null, 'Review deleted');
   } catch (err) { next(err); }
 };

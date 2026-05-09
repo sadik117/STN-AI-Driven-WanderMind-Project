@@ -31,6 +31,7 @@ export const getDestinations = async (req: Request, res: Response, next: NextFun
       ...(climate && { climate: { equals: climate, mode: 'insensitive' } }),
       ...(minCost && { avgCostPerDay: { gte: parseFloat(minCost) } }),
       ...(maxCost && { avgCostPerDay: { lte: parseFloat(maxCost) } }),
+      
     };
 
     const orderBy: any =
@@ -40,11 +41,42 @@ export const getDestinations = async (req: Request, res: Response, next: NextFun
             : { rating: 'desc' };
 
     const [destinations, total] = await Promise.all([
-      prisma.destination.findMany({ where, orderBy, skip, take: limitNum }),
+      prisma.destination.findMany({ 
+        where, 
+        orderBy, 
+        skip, 
+        take: limitNum,
+        include: {
+           reviews: true 
+          }
+      }),
       prisma.destination.count({ where }),
     ]);
 
-    const response = { success: true, message: 'Destinations fetched', data: destinations, pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum), hasNext: pageNum * limitNum < total, hasPrev: pageNum > 1 } };
+    const avgRatingsAndCounts = await Promise.all(
+      destinations.map(async (destination) => {
+        const reviews = await prisma.review.findMany({
+          where: { destinationId: destination.id },
+        });
+
+        const totalStars = reviews.reduce((sum, review) => sum + review.rating, 0);
+        const avgRating = reviews.length > 0 ? totalStars / reviews.length : 0;
+        const reviewCount = reviews.length;
+
+        return {
+          ...destination,
+          avgRating,
+          reviewCount,
+        };
+      })
+    );
+
+    const response = { 
+      success: true, 
+      message: 'Destinations fetched', 
+      data: avgRatingsAndCounts, 
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum), hasNext: pageNum * limitNum < total, hasPrev: pageNum > 1 } 
+    };
     await setCache(cacheKey, response, 3600); // 1 hour cache
     
     // Attach wishlist status for logged-in user

@@ -7,13 +7,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  MapPin, 
-  Clock, 
-  DollarSign, 
-  Star, 
-  Share2, 
-  Heart, 
+import {
+  MapPin,
+  DollarSign,
+  Star,
+  Share2,
   CheckCircle2,
   ChevronRight,
   Sparkles,
@@ -26,10 +24,13 @@ import {
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DestinationReviews from '@/components/shared/DestinationReviews';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 export default function DestinationDetailPage() {
+  const [selectedImg, setSelectedImg] = useState<string | null>(null);
   const { slug } = useParams();
 
   const { data, isLoading, isError } = useQuery({
@@ -78,13 +79,13 @@ export default function DestinationDetailPage() {
     <div className="pb-24">
       {/* Hero Header */}
       <div className="relative h-[60vh] min-h-[500px] w-full">
-        <img 
-          src={destination.images[0] || 'https://images.unsplash.com/photo-1488085061387-422e29b40080?q=80&w=1031&auto=format&fit=crop'} 
+        <img
+          src={destination.images[1] || 'https://images.unsplash.com/photo-1488085061387-422e29b40080?q=80&w=1031&auto=format&fit=crop'}
           alt={destination.name}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-        
+
         {/* Top Navigation */}
         <div className="absolute top-8 left-0 w-full z-10">
           <div className="container mx-auto px-4 flex justify-between items-center">
@@ -95,18 +96,19 @@ export default function DestinationDetailPage() {
               </Button>
             </Link>
             <div className="flex gap-3">
-              <Button 
-                onClick={()=>{
+              <Button
+                onClick={() => {
                   navigator.clipboard.writeText(window.location.href);
-                  toast.success("Link copied to clipboard!")}}
-               size="icon" className="rounded-full bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20">
+                  toast.success("Link copied to clipboard!")
+                }}
+                size="icon" className="rounded-full bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20">
                 <Share2 className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
-        
-        <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
+
+        <div className="absolute bottom-0 left-0 w-full p-10 md:p-26">
           <div className="container mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -158,33 +160,33 @@ export default function DestinationDetailPage() {
             <div>
               <Tabs defaultValue="overview" className="w-full">
                 <TabsList className="w-full justify-start border-b rounded-none h-14 bg-transparent gap-10 p-0 mb-10 overflow-x-auto no-scrollbar">
-                  <TabsTrigger 
-                    value="overview" 
+                  <TabsTrigger
+                    value="overview"
                     className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-14 px-0 text-lg font-bold transition-all"
                   >
                     Overview
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="itineraries" 
+                  <TabsTrigger
+                    value="itineraries"
                     className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-14 px-0 text-lg font-bold transition-all"
                   >
                     AI Itineraries
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="reviews" 
+                  <TabsTrigger
+                    value="reviews"
                     className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-14 px-0 text-lg font-bold transition-all"
                   >
                     Reviews
                   </TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="overview" className="mt-0 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="prose prose-lg dark:prose-invert max-w-none">
                     <h2 className="text-3xl font-bold font-heading mb-6">About {destination.name}</h2>
                     <p className="text-muted-foreground leading-relaxed text-xl">
                       {destination.description || `Experience the breathtaking beauty of ${destination.name}. This unique destination offers a perfect blend of culture, adventure, and relaxation. From local traditions to modern amenities, there's something for everyone to discover.`}
                     </p>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
                       <div className="p-6 bg-primary/5 rounded-3xl border border-primary/10 flex items-start gap-4">
                         <div className="bg-primary/10 p-3 rounded-2xl">
@@ -193,8 +195,8 @@ export default function DestinationDetailPage() {
                         <div>
                           <p className="font-bold text-lg">Best Time to Visit</p>
                           <p className="text-muted-foreground">
-                            {destination.bestMonths && destination.bestMonths.length > 0 
-                              ? destination.bestMonths.join(', ') 
+                            {destination.bestMonths && destination.bestMonths.length > 0
+                              ? destination.bestMonths.join(', ')
                               : 'Spring & Autumn'}
                           </p>
                         </div>
@@ -247,7 +249,7 @@ export default function DestinationDetailPage() {
                     )}
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="itineraries" className="mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-3xl p-12 border border-primary/10 text-center relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
@@ -300,7 +302,7 @@ export default function DestinationDetailPage() {
                       <Badge variant="outline" className="text-blue-500 border-blue-500/20 bg-blue-500/5 font-bold px-3">Excellent</Badge>
                     </div>
                   </div>
-                  
+
                   <div className="pt-8 border-t border-border/50 space-y-4">
                     <Link href={`/ai-planner?destination=${destination.name}`} className="w-full block">
                       <Button className="w-full h-14 rounded-2xl font-bold text-lg gap-3 group relative overflow-hidden">
@@ -322,21 +324,65 @@ export default function DestinationDetailPage() {
               {/* Photos Grid */}
               <div className="space-y-4">
                 <h4 className="font-bold text-xl px-2">Destination Gallery</h4>
+
+                {/* Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   {destination.images.slice(0, 4).map((img: string, i: number) => (
-                    <motion.div 
-                      key={i} 
+                    <motion.div
+                      key={i}
+                      layoutId={`img-${img}`} // For layout animation
+                      onClick={() => setSelectedImg(img)}
                       whileHover={{ scale: 1.05 }}
                       className="aspect-square rounded-3xl overflow-hidden bg-muted group cursor-pointer shadow-lg"
                     >
-                      <img 
-                        src={img} 
-                        alt={`View ${i + 1}`} 
-                        className="w-full h-full object-cover transition-transform duration-700" 
+                      <img
+                        src={img}
+                        alt={`View ${i + 1}`}
+                        className="w-full h-full object-cover"
                       />
                     </motion.div>
                   ))}
                 </div>
+
+                {/* Preview Modal Overlay */}
+                <AnimatePresence>
+                  {selectedImg && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-10">
+                      {/* Backdrop */}
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSelectedImg(null)}
+                        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                      />
+
+                      {/* Image Container */}
+                      <motion.div
+                        layoutId={`img-${selectedImg}`}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="relative max-w-5xl w-full h-[80vh] overflow-hidden rounded-3xl shadow-2xl z-10 mt-16"
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-4 right-4 bg-black/40 text-white hover:bg-black/60 rounded-full z-20"
+                          onClick={() => setSelectedImg(null)}
+                        >
+                          <X className="h-6 w-6" />
+                        </Button>
+
+                        <img
+                          src={selectedImg}
+                          className="w-full h-full object-cover bg-neutral-900"
+                          alt="Preview"
+                        />
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>

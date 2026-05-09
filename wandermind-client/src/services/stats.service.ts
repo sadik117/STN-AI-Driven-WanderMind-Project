@@ -25,13 +25,36 @@ export const appStatsQuery = {
 
 
 export interface HostStats {
-  totalDestinations: number;
-  totalExperiences: number;
-  totalBookings: number;
-  totalReviewsReceived: number;
-  avgRating: number;
-  activeListings: number;
-  totalEarnings: number;
+  experiences: {
+    total: number;
+    featured: number;
+    categories: string[];
+  };
+  bookings: {
+    total: number;
+    confirmed: number;
+    completed: number;
+    cancelled: number;
+    pending: number;
+  };
+  revenue: {
+    total: number;
+    monthly: { month: string; revenue: number }[];
+  };
+  guests: {
+    total: number;
+    avgPerBooking: number;
+  };
+  reviews: {
+    total: number;
+    avgRating: number;
+  };
+  topExperience: {
+    id: string;
+    title: string;
+    bookings: number;
+    rating: number;
+  } | null;
 }
 
 export const hostStatsQuery = {

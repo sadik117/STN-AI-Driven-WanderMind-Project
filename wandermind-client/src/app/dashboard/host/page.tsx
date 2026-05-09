@@ -3,7 +3,6 @@
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { hostStatsQuery, HostStats } from '@/services/stats.service';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,18 +13,9 @@ import {
   Star, 
   DollarSign, 
   TrendingUp, 
-  Users, 
-  BarChart3,
   PieChart as PieChartIcon,
   ArrowUpRight,
-  ArrowDownRight,
-  Clock,
-  Award,
-  Target,
-  Eye,
   MessageCircle,
-  Share2,
-  Heart
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -43,40 +33,22 @@ import {
   Legend,
   ResponsiveContainer,
   LineChart,
-  Line,
-  AreaChart,
-  Area
+  Line
 } from 'recharts';
-
-// Mock monthly data for charts
-const monthlyBookingsData = [
-  { month: 'Jan', bookings: 12, revenue: 2400 },
-  { month: 'Feb', bookings: 15, revenue: 3200 },
-  { month: 'Mar', bookings: 18, revenue: 3800 },
-  { month: 'Apr', bookings: 22, revenue: 4600 },
-  { month: 'May', bookings: 28, revenue: 5800 },
-  { month: 'Jun', bookings: 32, revenue: 6800 },
-  { month: 'Jul', bookings: 35, revenue: 7400 },
-  { month: 'Aug', bookings: 33, revenue: 7100 },
-  { month: 'Sep', bookings: 30, revenue: 6400 },
-  { month: 'Oct', bookings: 34, revenue: 7200 },
-  { month: 'Nov', bookings: 38, revenue: 8200 },
-  { month: 'Dec', bookings: 45, revenue: 9800 },
-];
-
-const categoryDistribution = [
-  { name: 'Adventure', value: 35, color: '#f59e0b' },
-  { name: 'Cultural', value: 25, color: '#8b5cf6' },
-  { name: 'Food', value: 20, color: '#ef4444' },
-  { name: 'Nature', value: 15, color: '#10b981' },
-  { name: 'Wellness', value: 5, color: '#3b82f6' },
-];
 
 const COLORS = ['#f59e0b', '#8b5cf6', '#ef4444', '#10b981', '#3b82f6'];
 
 export default function HostDashboard() {
   const { data: stats, isLoading, isError, refetch } = useQuery<HostStats>(hostStatsQuery);
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
+
+  const monthlyBookingsData = stats?.revenue?.monthly || [];
+  
+  const categoryDistribution = stats?.experiences?.categories?.map((cat, index) => ({
+    name: cat,
+    value: 1, // backend only returns distinct categories, so we'll weight them equally
+    color: COLORS[index % COLORS.length]
+  })) || [];
 
   // Animation variants
   const containerVariants = {
@@ -101,59 +73,51 @@ export default function HostDashboard() {
   const statCards = [
     {
       title: 'Total Experiences',
-      value: stats?.totalExperiences || 0,
+      value: stats?.experiences?.total || 0,
       icon: Package,
       color: 'text-purple-500',
       bg: 'bg-purple-500/10',
-      trend: '+12%',
-      description: 'Active listings',
     },
     {
       title: 'Total Bookings',
-      value: stats?.totalBookings || 0,
+      value: stats?.bookings?.total || 0,
       icon: Calendar,
       color: 'text-blue-500',
       bg: 'bg-blue-500/10',
-      trend: '+18%',
-      description: 'Confirmed bookings',
     },
     {
       title: 'Total Earnings',
-      value: `$${(stats?.totalEarnings || 0).toLocaleString()}`,
+      value: `$${(stats?.revenue?.total || 0).toLocaleString()}`,
       icon: DollarSign,
       color: 'text-emerald-500',
       bg: 'bg-emerald-500/10',
-      trend: '+24%',
-      description: 'Lifetime revenue',
     },
     {
       title: 'Avg Rating',
-      value: stats?.avgRating?.toFixed(1) || '0.0',
+      value: stats?.reviews?.avgRating?.toFixed(1) || '0.0',
       icon: Star,
       color: 'text-amber-500',
       bg: 'bg-amber-500/10',
-      trend: '+0.3',
-      description: 'From reviews',
       suffix: '★',
     },
   ];
 
   const secondaryStats = [
     {
-      title: 'Destinations',
-      value: stats?.totalDestinations || 0,
+      title: 'Total Guests Hosted',
+      value: stats?.guests?.total || 0,
       icon: MapPin,
       color: 'text-cyan-500',
     },
     {
-      title: 'Active Listings',
-      value: stats?.activeListings || 0,
+      title: 'Featured Experiences',
+      value: stats?.experiences?.featured || 0,
       icon: TrendingUp,
       color: 'text-indigo-500',
     },
     {
       title: 'Reviews Received',
-      value: stats?.totalReviewsReceived || 0,
+      value: stats?.reviews?.total || 0,
       icon: MessageCircle,
       color: 'text-pink-500',
     },
@@ -221,11 +185,6 @@ export default function HostDashboard() {
                           <span className="text-lg text-amber-500">{stat.suffix}</span>
                         )}
                       </div>
-                      <p className="text-xs text-emerald-500 font-medium mt-1 flex items-center gap-1">
-                        <ArrowUpRight className="h-3 w-3" />
-                        {stat.trend} from last month
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
                     </div>
                     <div className={`${stat.bg} ${stat.color} p-3 rounded-xl`}>
                       <stat.icon className="h-6 w-6" />
@@ -308,18 +267,13 @@ export default function HostDashboard() {
                   <BarChart data={monthlyBookingsData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="month" className="text-xs" />
-                    <YAxis yAxisId="left" className="text-xs" />
-                    <YAxis yAxisId="right" orientation="right" className="text-xs" />
+                    <YAxis className="text-xs" />
                     <Tooltip 
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                      formatter={(value: any, name: any) => {
-                        if (name === 'revenue') return [`$${value}`, 'Revenue'];
-                        return [value, 'Bookings'];
-                      }}
+                      formatter={(value: any, name: any) => [`$${value}`, 'Revenue']}
                     />
                     <Legend />
-                    <Bar yAxisId="left" dataKey="bookings" name="Bookings" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar yAxisId="right" dataKey="revenue" name="Revenue ($)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="revenue" name="Revenue ($)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 ) : (
                   <LineChart data={monthlyBookingsData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -328,18 +282,10 @@ export default function HostDashboard() {
                     <YAxis className="text-xs" />
                     <Tooltip 
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                      formatter={(value: any) => [`$${value}`, 'Revenue']}
+                      formatter={(value: any, name: any) => [`$${value}`, 'Revenue']}
                     />
                     <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      name="Revenue ($)" 
-                      stroke="#8b5cf6" 
-                      strokeWidth={2} 
-                      dot={{ fill: '#8b5cf6', r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
+                    <Line type="monotone" dataKey="revenue" name="Revenue ($)" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: '#8b5cf6' }} activeDot={{ r: 6 }} />
                   </LineChart>
                 )}
               </ResponsiveContainer>

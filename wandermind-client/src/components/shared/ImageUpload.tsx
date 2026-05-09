@@ -101,7 +101,7 @@ export function ImageUpload({ onUpload, defaultValue, label }: ImageUploadProps)
             </label>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2 px-1">
-            PNG, JPG or WebP. Max size 5MB.
+            PNG, JPG or WebP. Max size 10MB.
           </p>
         </div>
       </div>

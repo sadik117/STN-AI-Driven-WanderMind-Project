@@ -716,7 +716,7 @@ export default function AdminDestinations() {
                 onChange={(e) => setFeatured(e.target.checked)}
                 className="rounded border-gray-300"
               />
-              <Label htmlFor="featured" className="text-sm cursor-pointer">Feature this destination (shows on homepage)</Label>
+              <Label htmlFor="featured" className="text-sm cursor-pointer">Feature this destination</Label>
             </div>
 
             <DialogFooter>

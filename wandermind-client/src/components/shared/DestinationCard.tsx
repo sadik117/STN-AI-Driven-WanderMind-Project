@@ -206,7 +206,7 @@ export function DestinationCard({ destination, featured = false }: { destination
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
           <img
-            src={destination.images[0] || 'https://images.unsplash.com/photo-1488085061387-422e29b40080?q=80&w=1031&auto=format&fit=crop'}
+            src={destination.images[1] || 'https://images.unsplash.com/photo-1488085061387-422e29b40080?q=80&w=1031&auto=format&fit=crop'}
             alt={destination.name}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
           />

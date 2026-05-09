@@ -1,10 +1,11 @@
 "use client"
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Loader2, Sparkles, MapPin } from "lucide-react";
+import { X, Send, Loader2, Sparkles, MapPin, BotMessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { aiService } from "@/services";
+import { useAuthStore } from "@/store/useAuthStore";
 
 interface Message {
   role: 'user' | 'assistant';
@@ -12,6 +13,7 @@ interface Message {
 }
 
 export function ChatWidget() {
+  const { user, isAuthenticated } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [history, setHistory] = useState<Message[]>([
@@ -38,7 +40,8 @@ export function ChatWidget() {
     try {
       const payload = {
         message: userMessage.content,
-        history: history.slice(1).map(h => ({ role: h.role, content: h.content }))
+        history: history.slice(1).map(h => ({ role: h.role, content: h.content })),
+        extraDetails: isAuthenticated && user ? `The user's name is ${user.name} and their platform role is ${user.role}. Please address them by their first name naturally when helpful.` : undefined
       };
 
       const result: any = await aiService.chat(payload);
@@ -104,7 +107,7 @@ export function ChatWidget() {
             onClick={() => setIsOpen(true)}
             className="fixed bottom-6 right-6 h-16 w-16 bg-gradient-to-br from-primary to-primary/80 rounded-full shadow-2xl flex items-center justify-center text-primary-foreground z-50 border-4 border-background group"
           >
-            <MessageCircle className="h-8 w-8 group-hover:scale-110 transition-transform" />
+            <BotMessageSquare className="h-8 w-8 group-hover:scale-110 transition-transform" />
             <span className="absolute -top-1 -right-1 flex h-4 w-4">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-background"></span>

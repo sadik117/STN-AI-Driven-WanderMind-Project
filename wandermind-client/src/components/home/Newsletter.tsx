@@ -23,11 +23,11 @@ export function Newsletter() {
           <p className="text-lg text-white/80 mb-8">
             Join our community of travelers. Receive exclusive destination guides, AI travel tips, and early access to unique experiences directly in your inbox.
           </p>
-          
+
           <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" onSubmit={(e) => e.preventDefault()}>
-            <Input 
-              type="email" 
-              placeholder="Your email address" 
+            <Input
+              type="email"
+              placeholder="Your email address"
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50 h-12"
               required
             />

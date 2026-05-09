@@ -65,7 +65,7 @@ export default function ExperienceDetailPage() {
         duration: 5000,
         icon: '🎉',
       });
-      router.push('/payment');
+      router.push('/dashboard/traveler/bookings');
     },
     onError: (error: any) => {
       if (error.response?.status === 401) {

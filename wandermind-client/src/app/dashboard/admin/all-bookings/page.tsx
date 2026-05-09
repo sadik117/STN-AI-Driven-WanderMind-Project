@@ -46,6 +46,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { io } from 'socket.io-client';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface Booking {
   id: string;
@@ -53,7 +54,6 @@ interface Booking {
   guests: number;
   totalPrice: number;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
-  paymentStatus: string;
   notes: string | null;
   createdAt: string;
   user: {
@@ -80,12 +80,6 @@ const statusIcons = {
   COMPLETED: CheckCircle,
 };
 
-const paymentStatusColors = {
-  paid: 'bg-emerald-500/10 text-emerald-500',
-  unpaid: 'bg-red-500/10 text-red-500',
-  refunded: 'bg-amber-500/10 text-amber-500',
-};
-
 export default function AdminBookings() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -101,14 +95,19 @@ export default function AdminBookings() {
   const [showNotifications, setShowNotifications] = useState(false);
   const limit = 10;
 
+  const { user } = useAuthStore();
+
   // Initialize socket connection
   useEffect(() => {
+    if (!user) return;
+
     const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
       withCredentials: true,
     });
 
     socketInstance.on('connect', () => {
       console.log('Socket connected for admin');
+      socketInstance.emit('join', user.id);
     });
 
     socketInstance.on('notification', (notification) => {
@@ -131,15 +130,16 @@ export default function AdminBookings() {
   const { data: bookingsData, isLoading, refetch } = useQuery({
     queryKey: ['admin-bookings', page, statusFilter, search],
     queryFn: async () => {
-      const res = await api.get('/admin/bookings', {
+      const res = (await api.get('/admin/bookings', {
         params: { 
           page, 
           limit, 
           status: statusFilter !== 'ALL' ? statusFilter : undefined,
           search: search || undefined
         }
-      });
-      return res.data;
+      })) as any;
+
+      return res;
     },
     refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
@@ -188,11 +188,11 @@ export default function AdminBookings() {
     setIsViewDialogOpen(true);
   };
 
-  const totalPages = Math.ceil((bookingsData?.total || 0) / limit);
+  const totalPages = Math.ceil((bookingsData?.pagination?.total || 0) / limit);
 
   // Calculate statistics
   const stats = {
-    total: bookingsData?.total || 0,
+    total: bookingsData?.pagination?.total || 0,
     pending: bookingsData?.stats?.PENDING || 0,
     confirmed: bookingsData?.stats?.CONFIRMED || 0,
     completed: bookingsData?.stats?.COMPLETED || 0,
@@ -204,19 +204,19 @@ export default function AdminBookings() {
     if (newStatus === 'CONFIRMED' && oldStatus === 'PENDING') {
       return {
         title: 'Confirm Booking',
-        message: 'This will send a confirmation email and notification to the customer.',
+        message: 'This will send a confirmation notification to the customer.',
         color: 'emerald'
       };
     } else if (newStatus === 'CANCELLED') {
       return {
         title: 'Cancel Booking',
-        message: 'This will cancel the booking and trigger an automatic refund process if payment was made. The customer will be notified immediately.',
+        message: 'This will cancel the booking. The customer will be notified immediately.',
         color: 'red'
       };
     } else if (newStatus === 'COMPLETED') {
       return {
         title: 'Complete Booking',
-        message: 'Marking this as completed will finalize the booking and release any pending payments to the host.',
+        message: 'Marking this as completed will finalize the booking and allow the traveler to leave a review.',
         color: 'blue'
       };
     }
@@ -426,7 +426,6 @@ export default function AdminBookings() {
                   <th className="px-4 py-3 text-sm font-semibold">Guests</th>
                   <th className="px-4 py-3 text-sm font-semibold">Total</th>
                   <th className="px-4 py-3 text-sm font-semibold">Status</th>
-                  <th className="px-4 py-3 text-sm font-semibold">Payment</th>
                   <th className="px-4 py-3 text-sm font-semibold text-right">Actions</th>
                 </tr>
               </thead>
@@ -441,12 +440,11 @@ export default function AdminBookings() {
                       <td className="px-4 py-3"><Skeleton className="h-4 w-12" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-6 w-20" /></td>
-                      <td className="px-4 py-3"><Skeleton className="h-6 w-16" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-8 w-20 ml-auto" /></td>
                     </tr>
                   ))
-                ) : bookingsData?.bookings?.length > 0 ? (
-                  bookingsData.bookings.map((booking: Booking) => {
+                ) : bookingsData?.data?.length > 0 ? (
+                  bookingsData?.data?.map((booking: Booking) => {
                     const StatusIcon = statusIcons[booking.status as keyof typeof statusIcons];
                     return (
                       <tr key={booking.id} className="hover:bg-muted/20 transition-colors">
@@ -476,11 +474,6 @@ export default function AdminBookings() {
                             {booking.status}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3">
-                          <Badge className={`${paymentStatusColors[booking.paymentStatus as keyof typeof paymentStatusColors]} rounded-full px-3`}>
-                            {booking.paymentStatus}
-                          </Badge>
-                        </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex gap-2 justify-end">
                             <Button 
@@ -508,7 +501,7 @@ export default function AdminBookings() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                       <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                       No bookings found.
                     </td>
@@ -522,7 +515,7 @@ export default function AdminBookings() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6 pt-4 border-t flex-wrap gap-4">
               <div className="text-sm text-muted-foreground">
-                Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, bookingsData?.total || 0)} of {bookingsData?.total || 0} bookings
+                Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, bookingsData?.pagination?.total || 0)} of {bookingsData?.pagination?.total || 0} bookings
               </div>
               <div className="flex gap-2">
                 <Button
@@ -632,16 +625,16 @@ export default function AdminBookings() {
               </div>
 
               <div className="border-t pt-4">
-                <h4 className="font-semibold mb-3">Payment Information</h4>
+                <h4 className="font-semibold mb-3">Booking Status</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground">Total Price</Label>
                     <p className="text-lg font-bold mt-1">${selectedBooking.totalPrice}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Payment Status</Label>
-                    <Badge className={`${paymentStatusColors[selectedBooking.paymentStatus as keyof typeof paymentStatusColors]} mt-1`}>
-                      {selectedBooking.paymentStatus}
+                    <Label className="text-muted-foreground">Current Status</Label>
+                    <Badge className={`${statusColors[selectedBooking.status as keyof typeof statusColors]} mt-1`}>
+                      {selectedBooking.status}
                     </Badge>
                   </div>
                 </div>
@@ -683,7 +676,6 @@ export default function AdminBookings() {
                   <SelectContent>
                     <SelectItem value="PENDING">Pending - Awaiting confirmation</SelectItem>
                     <SelectItem value="CONFIRMED">Confirmed - Booking approved</SelectItem>
-                    <SelectItem value="COMPLETED">Completed - Experience finished</SelectItem>
                     <SelectItem value="CANCELLED">Cancelled - Booking cancelled</SelectItem>
                   </SelectContent>
                 </Select>
@@ -711,13 +703,13 @@ export default function AdminBookings() {
                   {newStatus === 'CANCELLED' && (
                     <>
                       <strong>⚠️ Cancel Booking</strong>
-                      <p className="mt-1">This will cancel the booking and trigger an automatic refund process if payment was made. The customer and host will be notified immediately via email and in-app notification.</p>
+                      <p className="mt-1">This will cancel the booking. The customer and host will be notified immediately via email and in-app notification.</p>
                     </>
                   )}
                   {newStatus === 'COMPLETED' && selectedBooking.status === 'CONFIRMED' && (
                     <>
                       <strong>✓ Complete Booking</strong>
-                      <p className="mt-1">Marking this as completed will finalize the booking and release any pending payments to the host. A review request will be sent to the customer.</p>
+                      <p className="mt-1">Marking this as completed will finalize the booking. A review request will be sent to the customer.</p>
                     </>
                   )}
                 </div>

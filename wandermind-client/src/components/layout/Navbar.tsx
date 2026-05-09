@@ -39,6 +39,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import NotificationDropdown from './NotificationDropdown';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -157,7 +158,9 @@ export function Navbar() {
                 </Link>
               </div>
             ) : (
-              <DropdownMenu>
+              <div className="flex items-center gap-2">
+                <NotificationDropdown />
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
                     variant="ghost" 
@@ -208,7 +211,8 @@ export function Navbar() {
                     Log Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
+                </DropdownMenu>
+              </div>
             )}
 
             {/* Mobile Menu Button */}

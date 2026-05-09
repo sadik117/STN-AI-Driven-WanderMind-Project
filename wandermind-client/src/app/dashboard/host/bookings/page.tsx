@@ -19,10 +19,45 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { io } from 'socket.io-client';
+import { useEffect } from 'react';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function HostBookings() {
   const [search, setSearch] = useState('');
+  const [socket, setSocket] = useState<any>(null);
   const queryClient = useQueryClient();
+
+  const { user } = useAuthStore();
+
+  // Initialize socket connection for real-time notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
+      withCredentials: true,
+    });
+
+    socketInstance.on('connect', () => {
+      console.log('Socket connected for host');
+      socketInstance.emit('join', user.id);
+    });
+
+    socketInstance.on('notification', (notification) => {
+      toast.info(`New notification: ${notification.title}`, {
+        description: notification.message,
+        duration: 5000,
+      });
+      // Invalidate queries to show the new booking/status change
+      queryClient.invalidateQueries({ queryKey: ['host-bookings'] });
+    });
+
+    setSocket(socketInstance);
+
+    return () => {
+      socketInstance.disconnect();
+    };
+  }, [queryClient]);
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['host-bookings', search],
@@ -117,6 +152,7 @@ export default function HostBookings() {
                         <Badge className={
                           booking.status === 'CONFIRMED' ? 'bg-emerald-500/10 text-emerald-500 border-none' :
                           booking.status === 'PENDING' ? 'bg-amber-500/10 text-amber-500 border-none' :
+                          booking.status === 'COMPLETED' ? 'bg-blue-500/10 text-blue-500 border-none' :
                           'bg-destructive/10 text-destructive border-none'
                         }>
                           {booking.status}
@@ -132,17 +168,19 @@ export default function HostBookings() {
                           <DropdownMenuContent align="end" className="w-48 rounded-xl">
                             <DropdownMenuLabel>Manage Booking</DropdownMenuLabel>
                             <DropdownMenuItem 
-                              className="gap-2 text-emerald-600 focus:text-emerald-600"
-                              onClick={() => updateStatusMutation.mutate({ bookingId: booking.id, status: 'CONFIRMED' })}
-                            >
-                              <CheckCircle className="h-4 w-4" /> Confirm
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
                               className="gap-2 text-destructive focus:text-destructive"
                               onClick={() => updateStatusMutation.mutate({ bookingId: booking.id, status: 'CANCELLED' })}
                             >
                               <XCircle className="h-4 w-4" /> Cancel
                             </DropdownMenuItem>
+                            {booking.status === 'CONFIRMED' && (
+                              <DropdownMenuItem 
+                                className="gap-2 text-blue-600 focus:text-blue-600"
+                                onClick={() => updateStatusMutation.mutate({ bookingId: booking.id, status: 'COMPLETED' })}
+                              >
+                                <CheckCircle className="h-4 w-4" /> Mark as Completed
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="gap-2">
                               <User className="h-4 w-4" /> Guest Profile

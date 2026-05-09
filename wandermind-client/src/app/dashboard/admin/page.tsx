@@ -133,8 +133,6 @@ export default function AdminDashboard() {
       icon: Users, 
       color: 'text-blue-500', 
       bg: 'bg-blue-500/10',
-      trend: '+12%',
-      description: 'Registered users'
     },
     { 
       title: 'Destinations', 
@@ -142,8 +140,6 @@ export default function AdminDashboard() {
       icon: MapPin, 
       color: 'text-emerald-500', 
       bg: 'bg-emerald-500/10',
-      trend: '+5',
-      description: 'Available destinations'
     },
     { 
       title: 'Experiences', 
@@ -151,8 +147,6 @@ export default function AdminDashboard() {
       icon: Package, 
       color: 'text-purple-500', 
       bg: 'bg-purple-500/10',
-      trend: '+8',
-      description: 'Active experiences'
     },
     { 
       title: 'Total Bookings', 
@@ -160,8 +154,6 @@ export default function AdminDashboard() {
       icon: ShoppingBag, 
       color: 'text-amber-500', 
       bg: 'bg-amber-500/10',
-      trend: '+15%',
-      description: 'All time bookings'
     },
     { 
       title: 'Total Revenue', 
@@ -169,8 +161,6 @@ export default function AdminDashboard() {
       icon: DollarSign, 
       color: 'text-violet-500', 
       bg: 'bg-violet-500/10',
-      trend: '+18%',
-      description: 'From completed bookings'
     },
   ];
 
@@ -233,8 +223,6 @@ export default function AdminDashboard() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs md:text-sm font-medium text-muted-foreground truncate">{stat.title}</p>
                     <h3 className="text-xl md:text-2xl font-bold mt-1 truncate">{stat.value}</h3>
-                    <p className="text-[10px] md:text-xs text-muted-foreground mt-1 line-clamp-1">{stat.description}</p>
-                    <p className="text-[10px] md:text-xs text-emerald-500 font-medium mt-1">{stat.trend} from last month</p>
                   </div>
                   <div className={`${stat.bg} ${stat.color} p-2 md:p-3 rounded-xl flex-shrink-0 ml-2 group-hover:scale-110 transition-transform`}>
                     <stat.icon className="h-4 w-4 md:h-5 md:w-5" />

@@ -27,8 +27,19 @@ import {
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
+import { myBookingsQuery, Booking } from '@/services/booking.service';
+import { myPackingListsQuery, PackingList } from '@/services/user.service';
+import { format } from 'date-fns';
+
 export default function TravelerDashboard() {
-  const { data: stats, isLoading, isError, refetch } = useQuery<TravelerStats>(travelerStatsQuery);
+  const { data: stats, isLoading: isStatsLoading, isError: isStatsError, refetch } = useQuery<TravelerStats>(travelerStatsQuery);
+  const { data: bookingsData, isLoading: isBookingsLoading, isError: isBookingsError } = useQuery(myBookingsQuery({ limit: 5 }));
+  const { data: packingLists, isLoading: isPackingLoading, isError: isPackingError } = useQuery(myPackingListsQuery);
+
+  const bookings = (Array.isArray(bookingsData) ? bookingsData : bookingsData?.data) || [] as Booking[];
+  const isLoading = isStatsLoading || isBookingsLoading || isPackingLoading;
+  const hasError = isStatsError || isBookingsError || isPackingError;
+
 
   // Animation variants
   const containerVariants = {
@@ -106,7 +117,8 @@ export default function TravelerDashboard() {
     },
   ];
 
-  if (isError) {
+  if (hasError) {
+
     return (
       <div className="space-y-8">
         <DashboardHeader
@@ -128,6 +140,7 @@ export default function TravelerDashboard() {
       </div>
     );
   }
+
 
   return (
     <div className="space-y-8">
@@ -227,36 +240,44 @@ export default function TravelerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {/* We'll eventually fetch real recent bookings here, for now using dummy with stats info */}
-                {stats?.totalBookings === 0 ? (
+                {isBookingsLoading ? (
+                  Array(3).fill(0).map((_, i) => (
+                    <Skeleton key={i} className="h-20 rounded-2xl" />
+                  ))
+                ) : bookings.length === 0 ? (
                   <div className="text-center py-10">
                     <div className="text-4xl mb-3">🏖️</div>
                     <p className="text-muted-foreground">No bookings found. Start exploring!</p>
                   </div>
                 ) : (
-                  [1, 2, 3].map((i) => (
-                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-border/40 hover:border-primary/30 transition-colors bg-card/50 gap-4">
+                  bookings.map((booking: Booking) => (
+                    <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border border-border/40 hover:border-primary/30 transition-colors bg-card/50 gap-4">
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
                           <Plane className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                          <h4 className="font-semibold text-base">Tropical Island Escape</h4>
+                          <h4 className="font-semibold text-base line-clamp-1">{booking.experience.title}</h4>
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" /> Bali, Indonesia • Dec 12-18, 2023
+                            <MapPin className="h-3 w-3" /> {booking.experience.destination.name} • {format(new Date(booking.date), 'MMM dd, yyyy')}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between sm:justify-end gap-4">
                         <div className="text-right sm:text-right">
-                          <p className="font-bold text-emerald-600">$450.00</p>
-                          <Badge variant="outline" className="text-[10px] uppercase font-bold text-emerald-600 border-emerald-600/20 bg-emerald-600/5">
-                            Confirmed
+                          <p className="font-bold text-emerald-600">${booking.totalPrice.toLocaleString()}</p>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-[10px] uppercase font-bold ${
+                              booking.status === 'CONFIRMED' ? 'text-emerald-600 border-emerald-600/20 bg-emerald-600/5' :
+                              booking.status === 'PENDING' ? 'text-amber-600 border-amber-600/20 bg-amber-600/5' :
+                              booking.status === 'COMPLETED' ? 'text-blue-600 border-blue-600/20 bg-blue-600/5' :
+                              'text-rose-600 border-rose-600/20 bg-rose-600/5'
+                            }`}
+                          >
+                            {booking.status}
                           </Badge>
                         </div>
-                        <Button variant="ghost" size="icon" className="rounded-full">
-                          <ChevronRight className="h-5 w-5" />
-                        </Button>
                       </div>
                     </div>
                   ))
@@ -285,19 +306,38 @@ export default function TravelerDashboard() {
               </CardHeader>
 
               <CardContent>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/40">
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Summer Vacation</span>
+                {isPackingLoading ? (
+                  <Skeleton className="h-12 rounded-xl" />
+                ) : packingLists && packingLists.length > 0 ? (
+                  <div className="space-y-3">
+                    {packingLists.slice(0, 2).map((list: PackingList) => (
+                      <div key={list.id} className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/40">
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium line-clamp-1">{list.destination}</span>
+                            <span className="text-[10px] text-muted-foreground">{list.tripType}</span>
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="rounded-full text-[10px]">
+                          {list.itemsJson?.length || 0} items
+                        </Badge>
+                      </div>
+                    ))}
+
                   </div>
-                  <Badge variant="secondary" className="rounded-full text-xs">
-                    80% Done
-                  </Badge>
-                </div>
-                <Button variant="outline" className="w-full mt-4 rounded-xl">
-                  Manage Lists
-                </Button>
+                ) : (
+                  <div className="text-center py-4 border border-dashed rounded-xl border-border/50">
+                    <p className="text-xs text-muted-foreground">No packing lists created</p>
+                  </div>
+                )}
+                <Link href="/dashboard/traveler/packing-lists">
+                  <Button variant="outline" className="w-full mt-4 rounded-xl">
+                    Manage Lists
+                  </Button>
+                </Link>
               </CardContent>
+
             </Card>
 
           </div>

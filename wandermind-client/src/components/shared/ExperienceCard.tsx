@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export interface ExperienceProps {
   id: string;
@@ -32,6 +35,28 @@ export interface ExperienceProps {
 export function ExperienceCard({ experience, featured = false }: { experience: ExperienceProps; featured?: boolean }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const { user } = useAuthStore();
+  const router = useRouter();
+
+  const handleBooking = async (e: React.MouseEvent) => {
+    // Prevent any parent click events; like if the whole card was clickable
+    e.stopPropagation();
+
+    if (!user) {
+      
+      toast.info('Please login to book or see details of this experience', {
+      });
+
+      router.push('/login');
+      return;
+    }
+
+    try {
+      router.push(`/experience/${experience.id}`);
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.");
+    }
+  };
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
@@ -44,7 +69,7 @@ export function ExperienceCard({ experience, featured = false }: { experience: E
       'Luxury': 'bg-amber-500/90',
       'Family': 'bg-pink-500/90',
     };
-    return colors[category] || 'bg-primary/90';
+    return colors[category] || 'bg-gray/90';
   };
 
   const getRatingColor = (rating: number) => {
@@ -66,7 +91,7 @@ export function ExperienceCard({ experience, featured = false }: { experience: E
 
         {/* Featured Badge */}
         {featured && (
-          <div className="absolute top-4 left-4 z-20">
+          <div className="absolute top-2 left-4 z-20">
             <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-none shadow-lg px-3 py-1 gap-1">
               <Award className="h-3 w-3" />
               Featured
@@ -97,12 +122,12 @@ export function ExperienceCard({ experience, featured = false }: { experience: E
 
           {/* Rating Badge */}
           <motion.div
-            className="absolute top-4 right-4 z-20"
+            className="absolute top-2.5 right-4 z-20"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring" }}
           >
-            <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 shadow-lg">
+            <div className="flex items-center gap-1.5 bg-black/20 backdrop-blur-sm rounded-full px-1 shadow-lg">
               <Star
                 className={`h-3.5 w-3.5 fill-current ${getRatingColor(
                   experience.rating
@@ -167,15 +192,14 @@ export function ExperienceCard({ experience, featured = false }: { experience: E
             </div>
           </div>
 
-          <Link href={`/experiences/${experience.id}`}>
-            <Button
-              size="sm"
-              className="rounded-full gap-1 group/btn bg-primary hover:bg-primary/90"
-            >
-              <span>Book Now</span>
-              <ChevronRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
+          <Button
+            onClick={handleBooking}
+            size="sm"
+            className="rounded-full gap-1 group/btn bg-primary hover:bg-primary/90"
+          >
+            <span>Book Now</span>
+            <ChevronRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+          </Button>
         </CardFooter>
 
         {/* Hover Glow Effect */}

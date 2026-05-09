@@ -6,13 +6,13 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  MapPin, 
-  Star, 
-  Clock, 
-  Users, 
-  SlidersHorizontal, 
-  Search, 
+import {
+  MapPin,
+  Star,
+  Clock,
+  Users,
+  SlidersHorizontal,
+  Search,
   ArrowRight,
   Heart,
   TrendingUp,
@@ -36,6 +36,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from 'framer-motion';
+import { ExperienceCard } from '@/components/shared/ExperienceCard';
 
 interface Experience {
   id: string;
@@ -50,6 +51,12 @@ interface Experience {
   maxGuests: number;
   category: string;
   featured?: boolean;
+  host?: {
+    user: {
+      name: string;
+      image?: string;
+    };
+  };
 }
 
 const CATEGORIES = ['All', 'Adventure', 'Food', 'Cultural', 'Nature', 'Wellness', 'Luxury', 'Family'];
@@ -65,7 +72,7 @@ export default function ExperiencesPage() {
     queryKey: ['experiences', search, selectedCategory, priceRange, sortBy],
     queryFn: async () => {
       const res = await api.get('/experiences', {
-        params: { 
+        params: {
           search: search || undefined,
           category: selectedCategory !== 'All' ? selectedCategory : undefined,
           minPrice: priceRange[0],
@@ -95,7 +102,7 @@ export default function ExperiencesPage() {
         <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]" />
         <div className="absolute top-20 right-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 left-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        
+
         <div className="container mx-auto px-4 py-10 md:py-16 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -113,17 +120,17 @@ export default function ExperiencesPage() {
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
               From local cooking classes to extreme adventures. Book unique activities led by expert hosts.
             </p>
-            
+
             <div className="relative max-w-2xl mx-auto group">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
-              <Input 
-                placeholder="Search experiences, tours, activities..." 
+              <Input
+                placeholder="Search experiences, tours, activities..."
                 className="pl-14 h-14 bg-background/80 backdrop-blur-sm shadow-xl border-2 border-border/50 rounded-2xl text-lg focus:border-primary/50 transition-all"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl gap-2 shadow-lg"
               >
                 Search
@@ -150,7 +157,7 @@ export default function ExperiencesPage() {
               </Button>
             ))}
           </div>
-          
+
           <div className="flex gap-3">
             <Sheet open={showFilters} onOpenChange={setShowFilters}>
               <SheetTrigger asChild>
@@ -183,7 +190,7 @@ export default function ExperiencesPage() {
                       <span>${priceRange[1]}+</span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <label className="font-semibold">Sort By</label>
                     <div className="space-y-2">
@@ -215,7 +222,7 @@ export default function ExperiencesPage() {
                 </SheetFooter>
               </SheetContent>
             </Sheet>
-            
+
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -274,97 +281,23 @@ export default function ExperiencesPage() {
             </div>
           ) : experiences && experiences.length > 0 ? (
             experiences.map((exp: Experience, idx: number) => (
-              <motion.div
+              <ExperienceCard
                 key={exp.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: idx * 0.05 }}
-              >
-                <Card className="group border-border/50 hover:border-primary/30 transition-all duration-500 shadow-sm hover:shadow-2xl overflow-hidden rounded-3xl h-full flex flex-col">
-                  <div className="relative h-64 overflow-hidden">
-                    <img 
-                      src={exp.images?.[0] || 'https://images.unsplash.com/photo-1533105079780-92b9be482077?q=80&w=1000&auto=format&fit=crop'} 
-                      alt={exp.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    
-                    {/* Badges */}
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <Badge className="bg-white/90 text-black border-none backdrop-blur-sm shadow-lg">
-                        {exp.category}
-                      </Badge>
-                      {exp.featured && (
-                        <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-none shadow-lg">
-                          <TrendingUp className="h-3 w-3 mr-1" />
-                          Featured
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    {/* Wishlist Button */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-4 right-4 h-8 w-8 rounded-full bg-gray/60 backdrop-blur-md hover:bg-white shadow-lg"
-                    >
-                      <Heart className="h-4 w-4 hover:fill-red-500 hover:text-red-500 transition-colors" />
-                    </Button>
-                  </div>
-                  
-                  <CardContent className="p-5 flex-1">
-                    <div className="flex items-center gap-1 text-xs font-semibold text-primary uppercase tracking-wider mb-2">
-                      <MapPin className="h-3 w-3" />
-                      {exp.location}
-                    </div>
-                    <h3 className="font-heading font-bold text-xl mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                      {exp.title}
-                    </h3>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        {exp.duration}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3.5 w-3.5" />
-                        Max {exp.maxGuests}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                        {exp.rating?.toFixed(1) || 'New'}
-                      </span>
-                    </div>
-                  </CardContent>
-                  
-                  <CardFooter className="p-5 pt-0 flex items-center justify-between border-t border-border/30 mt-2 pt-4">
-                    <div className="flex items-baseline gap-1">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-2xl font-bold">{exp.price}</span>
-                      <span className="text-sm text-muted-foreground">/ person</span>
-                    </div>
-                    <Link href={`/experiences/${exp.id}`}>
-                      <Button 
-                        size="sm" 
-                        className="rounded-xl gap-2 font-bold group/btn hover:gap-3 transition-all"
-                      >
-                        Book Now
-                        <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              </motion.div>
+                experience={{
+                  ...exp,
+                  host: exp.host || { user: { name: 'Host' } }
+                }}
+                featured={exp.featured}
+              />
             ))
           ) : (
             <div className="col-span-full py-20 text-center bg-gradient-to-br from-muted/20 to-muted/10 rounded-3xl">
               <div className="text-6xl mb-4">🔍</div>
               <h3 className="text-xl font-bold mb-2">No experiences found</h3>
               <p className="text-muted-foreground mb-6">Try adjusting your search or filters.</p>
-              <div className="flex items-center justify-center">
-                <Button onClick={clearFilters} variant="outline" className="rounded-xl">
-                  Clear Filters
-                </Button>
-              </div>
+              <Button onClick={clearFilters} variant="outline" className="rounded-xl">
+                Clear Filters
+              </Button>
             </div>
           )}
         </div>

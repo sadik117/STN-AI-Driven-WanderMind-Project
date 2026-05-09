@@ -11,6 +11,9 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface BlogPost {
   id: string;
@@ -30,6 +33,18 @@ interface BlogPost {
 
 export default function BlogPage() {
   const [search, setSearch] = useState('');
+  const { user } = useAuthStore();
+  const router = useRouter();
+
+  const handleReadMore = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      toast.info('Please login to read the full article', {
+        description: 'Join the WanderMind community to access exclusive travel stories and guides.'
+      });
+      router.push('/login');
+    }
+  };
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['blogs', search],
@@ -124,7 +139,7 @@ export default function BlogPage() {
                 whileHover={{ y: -8 }}
                 className="group"
               >
-                <Link href={`/blog/${post.slug}`}>
+                <Link href={`/blog/${post.slug}`} onClick={handleReadMore}>
                   <Card className="h-full flex flex-col border border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-500 overflow-hidden rounded-3xl hover:shadow-2xl hover:shadow-primary/10 relative">
 
                     {/* Featured Badge */}

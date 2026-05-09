@@ -1,147 +1,478 @@
 'use client';
 
-import { useAuthStore } from '@/store/useAuthStore';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Calendar, Star, Plus, ArrowRight, DollarSign, Users } from 'lucide-react';
-import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
-import api from '@/lib/api';
+import { hostStatsQuery, HostStats } from '@/services/stats.service';
+import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  MapPin, 
+  Package, 
+  Calendar, 
+  Star, 
+  DollarSign, 
+  TrendingUp, 
+  Users, 
+  BarChart3,
+  PieChart as PieChartIcon,
+  ArrowUpRight,
+  ArrowDownRight,
+  Clock,
+  Award,
+  Target,
+  Eye,
+  MessageCircle,
+  Share2,
+  Heart
+} from 'lucide-react';
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  AreaChart,
+  Area
+} from 'recharts';
+
+// Mock monthly data for charts
+const monthlyBookingsData = [
+  { month: 'Jan', bookings: 12, revenue: 2400 },
+  { month: 'Feb', bookings: 15, revenue: 3200 },
+  { month: 'Mar', bookings: 18, revenue: 3800 },
+  { month: 'Apr', bookings: 22, revenue: 4600 },
+  { month: 'May', bookings: 28, revenue: 5800 },
+  { month: 'Jun', bookings: 32, revenue: 6800 },
+  { month: 'Jul', bookings: 35, revenue: 7400 },
+  { month: 'Aug', bookings: 33, revenue: 7100 },
+  { month: 'Sep', bookings: 30, revenue: 6400 },
+  { month: 'Oct', bookings: 34, revenue: 7200 },
+  { month: 'Nov', bookings: 38, revenue: 8200 },
+  { month: 'Dec', bookings: 45, revenue: 9800 },
+];
+
+const categoryDistribution = [
+  { name: 'Adventure', value: 35, color: '#f59e0b' },
+  { name: 'Cultural', value: 25, color: '#8b5cf6' },
+  { name: 'Food', value: 20, color: '#ef4444' },
+  { name: 'Nature', value: 15, color: '#10b981' },
+  { name: 'Wellness', value: 5, color: '#3b82f6' },
+];
+
+const COLORS = ['#f59e0b', '#8b5cf6', '#ef4444', '#10b981', '#3b82f6'];
 
 export default function HostDashboard() {
-  const { user } = useAuthStore();
+  const { data: stats, isLoading, isError, refetch } = useQuery<HostStats>(hostStatsQuery);
+  const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
 
-  const { data: stats } = useQuery({
-    queryKey: ['host-stats'],
-    queryFn: async () => {
-      // Assuming there's a host stats endpoint, or we calculate it
-      // const res = await api.get('/host/stats');
-      // return res.data;
-      return {
-        totalEarnings: 1240,
-        activeExperiences: 3,
-        totalBookings: 18,
-        averageRating: 4.8
-      };
-    }
-  });
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
 
-  const displayStats = [
-    { title: 'Total Earnings', value: `$${stats?.totalEarnings || 0}`, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { title: 'Active Experiences', value: stats?.activeExperiences || 0, icon: MapPin, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { title: 'Total Bookings', value: stats?.totalBookings || 0, icon: Calendar, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-    { title: 'Avg. Rating', value: stats?.averageRating || 0, icon: Star, color: 'text-rose-500', bg: 'bg-rose-500/10' },
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+  };
+
+  const statCards = [
+    {
+      title: 'Total Experiences',
+      value: stats?.totalExperiences || 0,
+      icon: Package,
+      color: 'text-purple-500',
+      bg: 'bg-purple-500/10',
+      trend: '+12%',
+      description: 'Active listings',
+    },
+    {
+      title: 'Total Bookings',
+      value: stats?.totalBookings || 0,
+      icon: Calendar,
+      color: 'text-blue-500',
+      bg: 'bg-blue-500/10',
+      trend: '+18%',
+      description: 'Confirmed bookings',
+    },
+    {
+      title: 'Total Earnings',
+      value: `$${(stats?.totalEarnings || 0).toLocaleString()}`,
+      icon: DollarSign,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-500/10',
+      trend: '+24%',
+      description: 'Lifetime revenue',
+    },
+    {
+      title: 'Avg Rating',
+      value: stats?.avgRating?.toFixed(1) || '0.0',
+      icon: Star,
+      color: 'text-amber-500',
+      bg: 'bg-amber-500/10',
+      trend: '+0.3',
+      description: 'From reviews',
+      suffix: '★',
+    },
   ];
+
+  const secondaryStats = [
+    {
+      title: 'Destinations',
+      value: stats?.totalDestinations || 0,
+      icon: MapPin,
+      color: 'text-cyan-500',
+    },
+    {
+      title: 'Active Listings',
+      value: stats?.activeListings || 0,
+      icon: TrendingUp,
+      color: 'text-indigo-500',
+    },
+    {
+      title: 'Reviews Received',
+      value: stats?.totalReviewsReceived || 0,
+      icon: MessageCircle,
+      color: 'text-pink-500',
+    },
+  ];
+
+  if (isError) {
+    return (
+      <div className="space-y-8">
+        <DashboardHeader 
+          title="Host Dashboard" 
+          description="Manage your experiences and track your performance"
+        />
+        <Card className="rounded-3xl">
+          <CardContent className="p-12 text-center">
+            <div className="text-6xl mb-4">📊</div>
+            <h3 className="text-xl font-semibold mb-2">Failed to Load Dashboard</h3>
+            <p className="text-muted-foreground mb-4">
+              There was an error loading your dashboard data. Please try again.
+            </p>
+            <Button onClick={() => refetch()} className="rounded-xl">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       <DashboardHeader 
-        title={`Welcome, Host ${user?.name.split(' ')[0]}!`}
-        description="Manage your experiences and track your earnings."
+        title="Host Dashboard" 
+        description="Manage your experiences and track your performance"
       >
-        <Link href="/dashboard/host/experiences/new">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Experience
+        <Link href="/dashboard/host/experiences">
+          <Button className="gap-2 rounded-xl">
+            <Package className="h-4 w-4" />
+            Manage Experiences
           </Button>
         </Link>
       </DashboardHeader>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {displayStats.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                  <h3 className="text-2xl font-bold mt-1">{stat.value}</h3>
-                </div>
-                <div className={`${stat.bg} ${stat.color} p-3 rounded-xl`}>
-                  <stat.icon className="h-6 w-6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
+        {isLoading ? (
+          Array(4).fill(0).map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-2xl" />
+          ))
+        ) : (
+          statCards.map((stat) => (
+            <motion.div key={stat.title} variants={itemVariants}>
+              <Card className="rounded-2xl hover:shadow-lg transition-all duration-300 border-border/50">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                      <div className="flex items-baseline gap-1 mt-2">
+                        <h3 className="text-3xl font-bold">{stat.value}</h3>
+                        {stat.suffix && (
+                          <span className="text-lg text-amber-500">{stat.suffix}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-emerald-500 font-medium mt-1 flex items-center gap-1">
+                        <ArrowUpRight className="h-3 w-3" />
+                        {stat.trend} from last month
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
+                    </div>
+                    <div className={`${stat.bg} ${stat.color} p-3 rounded-xl`}>
+                      <stat.icon className="h-6 w-6" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))
+        )}
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Bookings */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Recent Bookings</CardTitle>
-              <CardDescription>Latest bookings for your experiences.</CardDescription>
+      {/* Secondary Stats Row */}
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+      >
+        {isLoading ? (
+          Array(3).fill(0).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))
+        ) : (
+          secondaryStats.map((stat) => (
+            <motion.div key={stat.title} variants={itemVariants}>
+              <Card className="rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border-primary/10">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{stat.title}</p>
+                    <p className="text-2xl font-bold mt-1">{stat.value}</p>
+                  </div>
+                  <div className={`${stat.color} bg-${stat.color.split('-')[1]}/10 p-2 rounded-xl`}>
+                    <stat.icon className="h-5 w-5" />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))
+        )}
+      </motion.div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue & Bookings Chart */}
+        <Card className="rounded-3xl overflow-hidden">
+          <CardHeader className="pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Performance Overview
+                </CardTitle>
+                <CardDescription>Monthly bookings and revenue trends</CardDescription>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  variant={chartType === 'bar' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setChartType('bar')}
+                  className="rounded-lg"
+                >
+                  Bar
+                </Button>
+                <Button
+                  variant={chartType === 'line' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setChartType('line')}
+                  className="rounded-lg"
+                >
+                  Line
+                </Button>
+              </div>
             </div>
-            <Link href="/dashboard/host/bookings">
-              <Button variant="ghost" size="sm" className="gap-1">
-                View All <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { guest: 'Alice Johnson', experience: 'Sunset Yacht Tour', date: 'Oct 12, 2023', amount: 150, status: 'Confirmed' },
-                { guest: 'Bob Smith', experience: 'Traditional Cooking Class', date: 'Oct 15, 2023', amount: 85, status: 'Pending' },
-                { guest: 'Charlie Brown', experience: 'Mountain Hiking Guide', date: 'Oct 20, 2023', amount: 120, status: 'Confirmed' },
-              ].map((booking, i) => (
-                <div key={i} className="flex items-center justify-between p-4 rounded-xl border bg-card/50">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                      {booking.guest.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-semibold">{booking.guest}</p>
-                      <p className="text-xs text-muted-foreground">{booking.experience} • {booking.date}</p>
-                    </div>
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                {chartType === 'bar' ? (
+                  <BarChart data={monthlyBookingsData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="month" className="text-xs" />
+                    <YAxis yAxisId="left" className="text-xs" />
+                    <YAxis yAxisId="right" orientation="right" className="text-xs" />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      formatter={(value: any, name: any) => {
+                        if (name === 'revenue') return [`$${value}`, 'Revenue'];
+                        return [value, 'Bookings'];
+                      }}
+                    />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="bookings" name="Bookings" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar yAxisId="right" dataKey="revenue" name="Revenue ($)" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                ) : (
+                  <LineChart data={monthlyBookingsData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="month" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      formatter={(value: any) => [`$${value}`, 'Revenue']}
+                    />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      name="Revenue ($)" 
+                      stroke="#8b5cf6" 
+                      strokeWidth={2} 
+                      dot={{ fill: '#8b5cf6', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Category Distribution Pie Chart */}
+        <Card className="rounded-3xl overflow-hidden">
+          <CardHeader>
+            <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+              <PieChartIcon className="h-5 w-5 text-primary" />
+              Experience Categories
+            </CardTitle>
+            <CardDescription>Distribution of your experience types</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                    outerRadius={120}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {categoryDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    formatter={(value: any) => [`${value} experiences`, 'Count']}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Category Summary */}
+            <div className="grid grid-cols-3 gap-3 mt-6 pt-4 border-t">
+              {categoryDistribution.map((cat, idx) => (
+                <div key={cat.name} className="text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx] }} />
+                    <span className="text-xs text-muted-foreground">{cat.name}</span>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold">${booking.amount}</p>
-                    <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${
-                      booking.status === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
-                    }`}>
-                      {booking.status}
-                    </span>
-                  </div>
+                  <p className="text-lg font-bold">{cat.value}</p>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        {/* My Experiences Quick List */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Top Experiences</CardTitle>
-              <CardDescription>Your best performing activities.</CardDescription>
+      {/* Recent Activity Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Bookings */}
+        <Card className="rounded-3xl">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Recent Bookings
+            </CardTitle>
+            <CardDescription>Your latest customer bookings</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/20 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">Sarah Johnson</p>
+                      <p className="text-xs text-muted-foreground">Sunset Sailing Tour</p>
+                      <p className="text-xs text-muted-foreground">2 days ago • 2 guests</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-emerald-500/10 text-emerald-500 rounded-full">
+                    Confirmed
+                  </Badge>
+                </div>
+              ))}
             </div>
+            <Button variant="ghost" className="w-full mt-4 text-muted-foreground">
+              View All Bookings
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Performance Tips */}
+        <Card className="rounded-3xl bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              Performance Insights
+            </CardTitle>
+            <CardDescription>Tips to improve your hosting success</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { title: 'Sunset Yacht Tour', bookings: 45, rating: 4.9 },
-              { title: 'Traditional Cooking', bookings: 32, rating: 4.8 },
-              { title: 'Jungle Trekking', bookings: 28, rating: 4.7 },
-            ].map((exp, i) => (
-              <div key={i} className="flex items-center gap-4 group cursor-pointer">
-                <div className="h-12 w-12 rounded-lg bg-muted overflow-hidden">
-                  <img src={`https://images.unsplash.com/photo-1544911845-1f34a3eb46b1?w=100&q=80`} alt="" className="h-full w-full object-cover group-hover:scale-110 transition-transform" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate group-hover:text-primary transition-colors">{exp.title}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {exp.bookings}</span>
-                    <span className="flex items-center gap-1"><Star className="h-3 w-3 text-amber-500 fill-amber-500" /> {exp.rating}</span>
-                  </div>
-                </div>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/20">
+              <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                <Star className="h-4 w-4 text-emerald-500" />
               </div>
-            ))}
-            <Button variant="outline" className="w-full mt-4" asChild>
-              <Link href="/dashboard/host/experiences">Manage All</Link>
-            </Button>
+              <div>
+                <h4 className="font-semibold text-sm">4.8 Star Rating</h4>
+                <p className="text-xs text-muted-foreground">You're in the top 10% of hosts! Keep up the great work.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/20">
+              <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                <Target className="h-4 w-4 text-blue-500" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm">95% Response Rate</h4>
+                <p className="text-xs text-muted-foreground">You respond quickly to inquiries. Guests appreciate this!</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/20">
+              <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                <Eye className="h-4 w-4 text-amber-500" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm">Boost Your Visibility</h4>
+                <p className="text-xs text-muted-foreground">Add more photos to increase booking rates by up to 40%.</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

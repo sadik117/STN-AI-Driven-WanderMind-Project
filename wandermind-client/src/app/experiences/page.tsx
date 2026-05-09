@@ -89,14 +89,14 @@ export default function ExperiencesPage() {
   const hasActiveFilters = search || selectedCategory !== 'All' || priceRange[0] > 0 || priceRange[1] < 500;
 
   return (
-    <div className="pb-24">
+    <>
       {/* Hero Section with Parallax */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/20 via-primary/5 to-background">
         <div className="absolute inset-0 bg-grid-white/10 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]" />
         <div className="absolute top-20 right-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 left-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
         
-        <div className="container mx-auto px-4 py-20 md:py-28 relative z-10">
+        <div className="container mx-auto px-4 py-10 md:py-16 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -135,9 +135,9 @@ export default function ExperiencesPage() {
       </section>
 
       {/* Main Content */}
-      <section className="container mx-auto px-4 py-12">
+      <section className="container mx-auto px-4 py-10">
         {/* Toolbar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
           <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
             {CATEGORIES.map((cat) => (
               <Button
@@ -306,15 +306,10 @@ export default function ExperiencesPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute top-4 right-4 h-8 w-8 rounded-full bg-white/80 backdrop-blur-md hover:bg-white shadow-lg"
+                      className="absolute top-4 right-4 h-8 w-8 rounded-full bg-gray/60 backdrop-blur-md hover:bg-white shadow-lg"
                     >
                       <Heart className="h-4 w-4 hover:fill-red-500 hover:text-red-500 transition-colors" />
                     </Button>
-                    
-                    {/* Rating Badge */}
-                    <div className="absolute bottom-4 right-4 h-10 w-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-primary shadow-lg">
-                      <Star className="h-5 w-5 fill-current" />
-                    </div>
                   </div>
                   
                   <CardContent className="p-5 flex-1">
@@ -365,9 +360,11 @@ export default function ExperiencesPage() {
               <div className="text-6xl mb-4">🔍</div>
               <h3 className="text-xl font-bold mb-2">No experiences found</h3>
               <p className="text-muted-foreground mb-6">Try adjusting your search or filters.</p>
-              <Button onClick={clearFilters} variant="outline" className="rounded-xl">
-                Clear Filters
-              </Button>
+              <div className="flex items-center justify-center">
+                <Button onClick={clearFilters} variant="outline" className="rounded-xl">
+                  Clear Filters
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -382,6 +379,6 @@ export default function ExperiencesPage() {
           </div>
         )}
       </section>
-    </div>
+    </>
   );
 }

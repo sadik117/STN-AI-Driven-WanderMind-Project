@@ -31,7 +31,7 @@ export function Newsletter() {
               className="bg-white/10 border-white/20 text-white placeholder:text-white/50 h-12"
               required
             />
-            <Button type="submit" size="lg" className="h-12 px-8 bg-gray-500 hover:bg-gray-600 text-white">
+            <Button type="submit" size="lg" className="h-12 px-8 bg-zinc-700 hover:bg-zinc-900 text-white">
               Subscribe
               <Send className="ml-2 h-4 w-4" />
             </Button>

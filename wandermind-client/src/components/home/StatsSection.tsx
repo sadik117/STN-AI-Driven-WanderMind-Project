@@ -136,7 +136,7 @@ export function StatsSection() {
   }
 
   return (
-    <section className="relative py-8 md:py-16 overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-background">
+    <section className="relative py-8 md:py-14 overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-background">
       {/* Background Decorations */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
@@ -156,10 +156,10 @@ export function StatsSection() {
             <TrendingUp className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">Platform Statistics</span>
           </div>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <h2 className="text-2xl md:text-3xl font-heading font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             By the Numbers
           </h2>
-          <p className="text-base md:text-lg text-muted-foreground">
+          <p className="text-md md:text-xl text-muted-foreground">
             Trusted by thousands of travelers worldwide
           </p>
         </motion.div>
@@ -224,7 +224,7 @@ export function StatsSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-12 pt-8 text-center"
+          className="mt-8 pt-4 text-center"
         >
           <div className="flex flex-wrap justify-center gap-6 items-center">
             <div className="flex items-center gap-2">

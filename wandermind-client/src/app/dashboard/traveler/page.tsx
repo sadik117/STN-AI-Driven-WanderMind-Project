@@ -7,14 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { travelerStatsQuery, TravelerStats } from '@/services/stats.service';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  MapPin, 
-  Calendar, 
-  Star, 
-  Compass, 
-  Heart, 
-  BookOpen, 
-  Backpack, 
+import {
+  MapPin,
+  Calendar,
+  Star,
+  Compass,
+  Heart,
+  BookOpen,
+  Backpack,
   Clock,
   TrendingUp,
   Map as MapIcon,
@@ -109,8 +109,8 @@ export default function TravelerDashboard() {
   if (isError) {
     return (
       <div className="space-y-8">
-        <DashboardHeader 
-          title="My Travel Dashboard" 
+        <DashboardHeader
+          title="My Travel Dashboard"
           description="Track your journeys and plan your next adventure"
         />
         <Card className="rounded-3xl">
@@ -131,8 +131,8 @@ export default function TravelerDashboard() {
 
   return (
     <div className="space-y-8">
-      <DashboardHeader 
-        title="My Travel Dashboard" 
+      <DashboardHeader
+        title="My Travel Dashboard"
         description="Track your journeys and plan your next adventure"
       >
         <Link href="/destinations">
@@ -144,7 +144,7 @@ export default function TravelerDashboard() {
       </DashboardHeader>
 
       {/* Stats Grid */}
-      <motion.div 
+      <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -177,7 +177,7 @@ export default function TravelerDashboard() {
       </motion.div>
 
       {/* Secondary Stats Row */}
-      <motion.div 
+      <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -265,95 +265,42 @@ export default function TravelerDashboard() {
             </CardContent>
           </Card>
 
+        </div>
+
+        {/* Sidebar Column */}
+        <div className="space-y-6 w-full">
+
           {/* Travel Tools */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="rounded-3xl border-border/50 bg-gradient-to-br from-blue-500/5 to-transparent">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Backpack className="h-5 w-5 text-blue-500" />
+          <div>
+            {/* Packing Lists */}
+            <Card className="rounded-2xl sm:rounded-3xl border-border/50 bg-gradient-to-br from-blue-500/5 to-transparent">
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                  <Backpack className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
                   Packing Lists
                 </CardTitle>
-                <CardDescription>Stay organized for your next trip</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
+                  Stay organized for your next trip
+                </CardDescription>
               </CardHeader>
+
               <CardContent>
                 <div className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/40">
                   <div className="flex items-center gap-3">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">Summer Vacation</span>
                   </div>
-                  <Badge variant="secondary" className="rounded-full">80% Done</Badge>
+                  <Badge variant="secondary" className="rounded-full text-xs">
+                    80% Done
+                  </Badge>
                 </div>
-                <Button variant="outline" className="w-full mt-4 rounded-xl">Manage Lists</Button>
+                <Button variant="outline" className="w-full mt-4 rounded-xl">
+                  Manage Lists
+                </Button>
               </CardContent>
             </Card>
 
-            <Card className="rounded-3xl border-border/50 bg-gradient-to-br from-purple-500/5 to-transparent">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Award className="h-5 w-5 text-purple-500" />
-                  Travel Status
-                </CardTitle>
-                <CardDescription>Your journey milestones</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
-                    <Award className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <p className="font-bold">Globetrotter</p>
-                    <p className="text-xs text-muted-foreground">Level 4 Explorer</p>
-                  </div>
-                </div>
-                <div className="mt-4 h-2 w-full bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-500 w-3/4" />
-                </div>
-                <p className="text-[10px] text-right mt-1 text-muted-foreground">3 more trips to Elite status</p>
-              </CardContent>
-            </Card>
           </div>
-        </div>
-
-        {/* Sidebar Column */}
-        <div className="space-y-6">
-          {/* Saved Places Preview */}
-          <Card className="rounded-3xl border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Heart className="h-5 w-5 text-rose-500" />
-                Wishlist
-              </CardTitle>
-              <CardDescription>Destinations you want to visit</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {stats?.wishlist.count === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground">Your wishlist is empty.</p>
-                </div>
-              ) : (
-                [1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center gap-3 group cursor-pointer">
-                    <div className="h-14 w-14 rounded-xl bg-muted overflow-hidden flex-shrink-0">
-                      <img 
-                        src={`https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80&w=100`} 
-                        alt="Wishlist item" 
-                        className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <h5 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">Santorini, Greece</h5>
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <MapPin className="h-3 w-3" /> Europe • 4.9 <Star className="h-2 w-2 fill-amber-500 text-amber-500" />
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-              <Button variant="outline" className="w-full mt-2 rounded-xl" asChild>
-                <Link href="/dashboard/traveler/wishlist">View Wishlist</Link>
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

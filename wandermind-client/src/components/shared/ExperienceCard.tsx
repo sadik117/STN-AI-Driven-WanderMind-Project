@@ -107,7 +107,7 @@ export function ExperienceCard({ experience, featured = false }: { experience: E
           />
 
           {/* Category Badge */}
-          <div className="absolute top-4 left-4 z-20">
+          <div className="absolute top-2 left-4 z-20">
             <Badge
               className={`${getCategoryColor(
                 experience.category

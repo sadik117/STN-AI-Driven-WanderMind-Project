@@ -80,7 +80,7 @@ export default function DestinationDetailPage() {
       {/* Hero Header */}
       <div className="relative h-[60vh] min-h-[500px] w-full">
         <img
-          src={destination.images[1] || 'https://images.unsplash.com/photo-1488085061387-422e29b40080?q=80&w=1031&auto=format&fit=crop'}
+          src={destination.images[0] || 'https://images.unsplash.com/photo-1488085061387-422e29b40080?q=80&w=1031&auto=format&fit=crop'}
           alt={destination.name}
           className="w-full h-full object-cover"
         />

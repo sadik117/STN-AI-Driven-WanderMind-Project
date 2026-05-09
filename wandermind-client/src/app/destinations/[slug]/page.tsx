@@ -20,7 +20,8 @@ import {
   ArrowLeft,
   Calendar,
   CloudSun,
-  Backpack
+  Backpack,
+  Compass
 } from 'lucide-react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -220,6 +221,30 @@ export default function DestinationDetailPage() {
                         </div>
                       ))}
                     </div>
+
+                    {/* Map Section */}
+                    {destination.latitude && destination.longitude && (
+                      <div className="mt-16 space-y-6">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-primary/10 p-2 rounded-xl">
+                            <MapPin className="h-6 w-6 text-primary" />
+                          </div>
+                          <h3 className="text-2xl font-bold font-heading">Location & Geography</h3>
+                        </div>
+                        <div className="relative h-[400px] w-full rounded-[2.5rem] overflow-hidden border border-border/50 shadow-2xl group">
+                          <iframe
+                            width="100%"
+                            height="100%"
+                            style={{ border: 0 }}
+                            loading="lazy"
+                            allowFullScreen
+                            referrerPolicy="no-referrer-when-downgrade"
+                            src={`https://maps.google.com/maps?q=${destination.latitude},${destination.longitude}&z=14&output=embed`}
+                            className="grayscale group-hover:grayscale-0 transition-all duration-700"
+                          ></iframe>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
                 

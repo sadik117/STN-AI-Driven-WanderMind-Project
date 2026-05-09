@@ -216,18 +216,13 @@ export function DestinationCard({ destination, featured = false }: { destination
 
           {/* Rating Badge - Animated */}
           <motion.div
-            className="absolute top-4 right-4 z-30"
+            className="absolute top-2 right-2 z-30"
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200 }}
           >
             <Badge className={`bg-gradient-to-r ${getRatingColor(destination.rating || 0)} text-white border-none shadow-lg px-3 py-1.5 gap-1.5 flex items-center`}>
               <Star className="h-3.5 w-3.5 fill-white" />
               <span className="font-bold text-sm">{(Number(destination.rating) || 0).toFixed(1)}</span>
-              {destination.reviewCount > 0 && (
-                <span className="text-[10px] opacity-90 border-l border-white/20 pl-1.5 font-medium">
-                  {destination.reviewCount}
-                </span>
-              )}
             </Badge>
           </motion.div>
 

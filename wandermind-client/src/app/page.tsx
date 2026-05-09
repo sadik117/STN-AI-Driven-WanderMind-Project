@@ -6,6 +6,7 @@ import { TopExperiences } from "@/components/home/TopExperiences";
 import { StatsSection } from "@/components/home/StatsSection";
 import { Testimonials } from "@/components/home/Testimonials";
 import { Newsletter } from "@/components/home/Newsletter";
+import { ChatWidget } from "@/components/home/ChatWidget";
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
       <Testimonials />
       <StatsSection />
       <Newsletter />
+      <ChatWidget />
     </div>
   );
 }

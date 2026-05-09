@@ -104,7 +104,7 @@ export default function DestinationDetailPage() {
             </div>
           </div>
         </div>
-
+        
         <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
           <div className="container mx-auto">
             <motion.div
@@ -136,7 +136,7 @@ export default function DestinationDetailPage() {
                   <div className="bg-yellow-500/20 p-2 rounded-full backdrop-blur-sm">
                     <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
                   </div>
-                  <span className="text-lg font-medium">{destination.rating} ({destination.reviewCount} reviews)</span>
+                  <span className="text-lg font-medium">{(destination.rating || 0)} ({destination.reviewCount || 0} reviews)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="bg-emerald-500/20 p-2 rounded-full backdrop-blur-sm">

@@ -25,7 +25,7 @@ export default function DestinationReviews({ destinationId }: { destinationId: s
     }
   });
 
-  const reviews = data?.data || [];
+  const reviews = (Array.isArray(data) ? data : data?.data) || [];
 
   if (isLoading) {
     return (

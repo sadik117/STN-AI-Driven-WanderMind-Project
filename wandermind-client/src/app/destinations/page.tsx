@@ -18,6 +18,7 @@ export default function DestinationsPage() {
       const res = await api.get('/destinations', {
         params: { search }
       });
+      // console.log(res.data);
       return res.data as DestinationProps[];
     },
   });

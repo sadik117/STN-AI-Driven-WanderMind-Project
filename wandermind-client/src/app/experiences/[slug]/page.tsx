@@ -7,14 +7,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
-  MapPin, 
-  Clock, 
-  Users, 
-  Star, 
-  Calendar, 
-  CheckCircle2, 
-  Share2, 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
+import {
+  MapPin,
+  Clock,
+  Users,
+  Star,
+  Calendar,
+  CheckCircle2,
+  Share2,
   Heart,
   MessageSquare,
   ShieldCheck,
@@ -83,7 +85,7 @@ export default function ExperienceDetailPage() {
       toast.error('Please select a date');
       return;
     }
-    
+
     bookingMutation.mutate({
       experienceId: experience.id,
       date,
@@ -93,7 +95,7 @@ export default function ExperienceDetailPage() {
   };
 
   const handleContactHost = () => {
-    toast('Contact with host service will be available soon !!',{
+    toast('Contact with host service will be available soon !!', {
       duration: 5000,
       icon: '😊',
     });
@@ -127,9 +129,9 @@ export default function ExperienceDetailPage() {
     <div className="pb-24">
       {/* Back Button */}
       <div className="container mx-auto px-4 pt-6">
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => router.back()}
           className="gap-2 rounded-xl hover:bg-primary/10"
         >
@@ -203,7 +205,7 @@ export default function ExperienceDetailPage() {
             </div>
 
             {/* Host Info */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center justify-between p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-3xl border border-primary/20"
@@ -240,7 +242,7 @@ export default function ExperienceDetailPage() {
                 <TabsTrigger value="included" className="rounded-lg">What's Included</TabsTrigger>
                 <TabsTrigger value="reviews" className="rounded-lg">Reviews</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="overview" className="pt-6">
                 <div className="prose prose-lg max-w-none dark:prose-invert">
                   <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
@@ -248,7 +250,7 @@ export default function ExperienceDetailPage() {
                   </p>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="included" className="pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {includedItems.map((item, idx) => (
@@ -263,35 +265,59 @@ export default function ExperienceDetailPage() {
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="reviews" className="pt-6">
                 <div className="space-y-6">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="space-y-3 p-4 bg-muted/10 rounded-xl">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="font-bold">JD</span>
-                          </div>
-                          <div>
-                            <p className="font-semibold">John Doe</p>
-                            <div className="flex items-center gap-1">
-                              {[...Array(5)].map((_, idx) => (
-                                <Star key={idx} className="h-3 w-3 fill-amber-500 text-amber-500" />
-                              ))}
+                  {experience.reviews && experience.reviews.length > 0 ? (
+                    <>
+                      {experience.reviews.map((review: any) => (
+                        <div key={review.id} className="space-y-3 p-6 bg-muted/10 rounded-3xl border border-border/30 hover:border-primary/20 transition-colors group">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <Avatar className="h-12 w-12 border-2 border-background shadow-md">
+                                <AvatarImage src={review.author.image} />
+                                <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                                  {review.author.name.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-bold text-base">{review.author.name}</p>
+                                <div className="flex items-center gap-1">
+                                  {[...Array(5)].map((_, idx) => (
+                                    <Star
+                                      key={idx}
+                                      className={`h-3 w-3 ${idx < review.rating ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground/30'}`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
                             </div>
+                            <span className="text-xs text-muted-foreground font-medium">
+                              {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
+                            </span>
                           </div>
+                          <p className="text-muted-foreground leading-relaxed italic pl-16">
+                            "{review.content}"
+                          </p>
                         </div>
-                        <span className="text-xs text-muted-foreground">2 weeks ago</span>
+                      ))}
+                      {experience.reviews.length >= 20 && (
+                        <Button variant="outline" className="w-full rounded-2xl h-12 font-semibold">
+                          View All Reviews
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="py-16 text-center bg-muted/10 rounded-[2.5rem] border-2 border-dashed border-border/50">
+                      <div className="h-20 w-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
                       </div>
-                      <p className="text-muted-foreground italic">
-                        "Absolutely incredible experience! The guide was so knowledgeable and passionate. Highly recommend!"
+                      <h4 className="text-xl font-bold mb-2">No reviews yet</h4>
+                      <p className="text-muted-foreground max-w-xs mx-auto">
+                        Be the first to share your experience with other travelers!
                       </p>
                     </div>
-                  ))}
-                  <Button variant="outline" className="w-full rounded-xl">
-                    Load More Reviews
-                  </Button>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
@@ -317,7 +343,7 @@ export default function ExperienceDetailPage() {
                     </Badge>
                   </div>
                 </div>
-                
+
                 <CardContent className="p-6 space-y-6">
                   <form onSubmit={handleBooking} className="space-y-6">
                     <div className="space-y-3">
@@ -325,8 +351,8 @@ export default function ExperienceDetailPage() {
                         <Calendar className="h-4 w-4" />
                         Select Date
                       </Label>
-                      <Input 
-                        type="date" 
+                      <Input
+                        type="date"
                         className="h-12 rounded-xl border-2 focus:border-primary/50 transition-all"
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
@@ -334,7 +360,7 @@ export default function ExperienceDetailPage() {
                         required
                       />
                     </div>
-                    
+
                     <div className="space-y-3">
                       <Label className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
                         <Users className="h-4 w-4" />
@@ -382,8 +408,8 @@ export default function ExperienceDetailPage() {
                       </div>
                     </div>
 
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="w-full h-14 rounded-xl text-lg font-bold gap-2 shadow-xl shadow-primary/25 hover:scale-[1.02] transition-transform"
                       disabled={bookingMutation.isPending}
                     >
@@ -452,9 +478,9 @@ export default function ExperienceDetailPage() {
             >
               <ChevronRight className="h-6 w-6" />
             </Button>
-            <img 
-              src={allImages[selectedImage]} 
-              alt="" 
+            <img
+              src={allImages[selectedImage]}
+              alt=""
               className="w-full h-full object-contain"
             />
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">

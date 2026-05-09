@@ -92,6 +92,13 @@ export default function ExperienceDetailPage() {
     });
   };
 
+  const handleContactHost = () => {
+    toast('Contact with host service will be available soon !!',{
+      duration: 5000,
+      icon: '😊',
+    });
+  };
+
   if (isLoading) {
     return <ExperienceDetailSkeleton />;
   }
@@ -220,7 +227,7 @@ export default function ExperienceDetailPage() {
                   </div>
                 </div>
               </div>
-              <Button variant="outline" className="rounded-xl gap-2">
+              <Button onClick={handleContactHost} variant="outline" className="rounded-xl gap-2">
                 <MessageSquare className="h-4 w-4" />
                 Contact Host
               </Button>
@@ -298,7 +305,7 @@ export default function ExperienceDetailPage() {
               transition={{ delay: 0.2 }}
             >
               <Card className="sticky top-24 rounded-3xl border-border/50 shadow-2xl overflow-hidden">
-                <div className="bg-gradient-to-r from-primary to-primary/80 p-6 text-primary-foreground">
+                <div className="bg-gradient-to-r from-primary to-primary/80 dark:from-primary dark:to-primary/80 p-6 text-primary-foreground">
                   <div className="flex justify-between items-center">
                     <div>
                       <span className="text-4xl font-bold">${experience.price}</span>

@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -139,7 +139,7 @@ export default function BlogPage() {
                 whileHover={{ y: -8 }}
                 className="group"
               >
-                <Link href={`/blog/${post.slug}`} onClick={handleReadMore}>
+                <Link href={`/blogs/${post.slug}`} onClick={handleReadMore}>
                   <Card className="h-full flex flex-col border border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 transition-all duration-500 overflow-hidden rounded-3xl hover:shadow-2xl hover:shadow-primary/10 relative">
 
                     {/* Featured Badge */}

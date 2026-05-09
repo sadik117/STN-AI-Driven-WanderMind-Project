@@ -43,16 +43,13 @@ export function ExperienceCard({ experience, featured = false }: { experience: E
     e.stopPropagation();
 
     if (!user) {
-      
-      toast.info('Please login to book or see details of this experience', {
-      });
-
+      toast.info('Please login to book or see details of this experience');
       router.push('/login');
       return;
     }
 
     try {
-      router.push(`/experience/${experience.id}`);
+      router.push(`/experiences/${experience.id}`);
     } catch (error) {
       toast.error("Something went wrong. Please try again.");
     }

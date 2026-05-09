@@ -22,7 +22,9 @@ import {
   DollarSign
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+
 import { Input } from '@/components/ui/input';
 import {
   Sheet,
@@ -62,19 +64,30 @@ interface Experience {
 const CATEGORIES = ['All', 'Adventure', 'Food', 'Cultural', 'Nature', 'Wellness', 'Luxury', 'Family'];
 
 export default function ExperiencesPage() {
+  const searchParams = useSearchParams();
+  const initialDestinationId = searchParams.get('destinationId') || '';
+  
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [priceRange, setPriceRange] = useState([0, 500]);
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState('rating');
+  const [destinationId, setDestinationId] = useState(initialDestinationId);
+
+  // Sync destinationId from URL if it changes
+  useEffect(() => {
+    const id = searchParams.get('destinationId');
+    if (id) setDestinationId(id);
+  }, [searchParams]);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['experiences', search, selectedCategory, priceRange, sortBy],
+    queryKey: ['experiences', search, selectedCategory, priceRange, sortBy, destinationId],
     queryFn: async () => {
       const res = await api.get('/experiences', {
         params: {
           search: search || undefined,
           category: selectedCategory !== 'All' ? selectedCategory : undefined,
+          destinationId: destinationId || undefined,
           minPrice: priceRange[0],
           maxPrice: priceRange[1],
           sort: sortBy
@@ -301,16 +314,6 @@ export default function ExperiencesPage() {
             </div>
           )}
         </div>
-
-        {/* Load More */}
-        {experiences && experiences.length > 0 && (
-          <div className="text-center mt-12">
-            <Button variant="outline" className="rounded-xl gap-2">
-              Load More Experiences
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </section>
     </>
   );

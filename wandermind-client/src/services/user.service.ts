@@ -28,3 +28,25 @@ export const myPackingListsQuery = {
   },
 };
 
+export interface JournalEntry {
+  id: string;
+  userId: string;
+  title: string;
+  rawNotes: string;
+  aiSummary?: string;
+  highlights: string[];
+  hashtags: string[];
+  destination: string;
+  travelDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const myJournalsQuery = {
+  queryKey: ['users', 'journals'] as const,
+  queryFn: async (): Promise<JournalEntry[]> => {
+    const res = await userService.getMyJournals();
+    return res.data;
+  },
+};
+

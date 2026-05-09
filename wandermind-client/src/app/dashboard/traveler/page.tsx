@@ -266,14 +266,13 @@ export default function TravelerDashboard() {
                       <div className="flex items-center justify-between sm:justify-end gap-4">
                         <div className="text-right sm:text-right">
                           <p className="font-bold text-emerald-600">${booking.totalPrice.toLocaleString()}</p>
-                          <Badge 
-                            variant="outline" 
-                            className={`text-[10px] uppercase font-bold ${
-                              booking.status === 'CONFIRMED' ? 'text-emerald-600 border-emerald-600/20 bg-emerald-600/5' :
-                              booking.status === 'PENDING' ? 'text-amber-600 border-amber-600/20 bg-amber-600/5' :
-                              booking.status === 'COMPLETED' ? 'text-blue-600 border-blue-600/20 bg-blue-600/5' :
-                              'text-rose-600 border-rose-600/20 bg-rose-600/5'
-                            }`}
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] uppercase font-bold ${booking.status === 'CONFIRMED' ? 'text-emerald-600 border-emerald-600/20 bg-emerald-600/5' :
+                                booking.status === 'PENDING' ? 'text-amber-600 border-amber-600/20 bg-amber-600/5' :
+                                  booking.status === 'COMPLETED' ? 'text-blue-600 border-blue-600/20 bg-blue-600/5' :
+                                    'text-rose-600 border-rose-600/20 bg-rose-600/5'
+                              }`}
                           >
                             {booking.status}
                           </Badge>

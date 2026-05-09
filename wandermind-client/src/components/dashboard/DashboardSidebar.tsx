@@ -7,13 +7,14 @@ import {
   LayoutDashboard, 
   Map as MapIcon, 
   Calendar, 
-  Settings, 
   Users, 
   FileText, 
   Image as ImageIcon,
   Heart,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Backpack,
+  BookHeart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,8 @@ export function DashboardSidebar() {
       { name: 'My Bookings', href: `/dashboard/traveler/bookings`, icon: Calendar },
       { name: 'Saved Places', href: `/dashboard/traveler/saved-places`, icon: Heart },
       { name: 'Blog Posts', href: `/dashboard/traveler/blogs`, icon: FileText },
+      { name: 'Packing Lists', href: `/dashboard/traveler/packing-lists`, icon: Backpack },
+      { name: 'Journals', href: `/dashboard/traveler/journals`, icon: BookHeart },
     ],
     admin: [
       { name: 'Overview', href: `/dashboard/admin`, icon: LayoutDashboard },
@@ -79,17 +82,6 @@ export function DashboardSidebar() {
             })}
           </nav>
         </div>
-      </div>
-
-      <div className="p-4 border-t">
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={logout}
-        >
-          <LogOut className="h-4 w-4 mr-3" />
-          Log Out
-        </Button>
       </div>
     </aside>
   );

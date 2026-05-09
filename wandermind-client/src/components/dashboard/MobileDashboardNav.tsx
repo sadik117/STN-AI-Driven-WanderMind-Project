@@ -12,6 +12,8 @@ import {
   FileText, 
   Image as ImageIcon,
   Heart,
+  Backpack,
+  BookHeart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +28,9 @@ export function MobileDashboardNav() {
       { name: 'Itineraries', href: `/dashboard/traveler/itineraries`, icon: MapIcon },
       { name: 'Bookings', href: `/dashboard/traveler/bookings`, icon: Calendar },
       { name: 'Saved', href: `/dashboard/traveler/saved-places`, icon: Heart },
+      { name: 'Blogs', href: `/dashboard/traveler/blogs`, icon: FileText },
+      { name: 'Packing', href: `/dashboard/traveler/packing-lists`, icon: Backpack },
+      { name: 'Journals', href: `/dashboard/traveler/journals`, icon: BookHeart },
     ],
     admin: [
       { name: 'Stats', href: `/dashboard/admin`, icon: LayoutDashboard },
@@ -46,7 +51,7 @@ export function MobileDashboardNav() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t md:hidden">
-      <nav className="flex items-center justify-around p-2">
+      <nav className="flex items-center overflow-x-auto scrollbar-hide px-2 py-2 gap-2">
         {currentMenuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -54,7 +59,7 @@ export function MobileDashboardNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 p-2 transition-colors",
+                "flex flex-col items-center gap-1 p-2 transition-colors min-w-[70px]",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >

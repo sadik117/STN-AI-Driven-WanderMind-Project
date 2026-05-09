@@ -5,7 +5,7 @@ import { sendSuccess, sendError } from '../utils/response';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { z } from 'zod';
 
-// 1. AI ITINERARY BUILDER 
+// AI ITINERARY BUILDER 
 const itinerarySchema = z.object({
   destination: z.string().min(1),
   days: z.number().min(1).max(30),
@@ -26,37 +26,37 @@ export const generateItinerary = async (req: AuthRequest, res: Response, next: N
     const { destination, days, budget, travelStyle, interests } = parsed.data;
 
     const prompt = `You are an expert travel planner. Create a detailed ${days}-day itinerary for ${destination}.
-Travel style: ${travelStyle}
-Budget: ${budget ? `$${budget} USD total` : 'flexible'}
-Interests: ${interests?.join(', ') || 'general sightseeing'}
+      Travel style: ${travelStyle}
+      Budget: ${budget ? `$${budget} USD total` : 'flexible'}
+      Interests: ${interests?.join(', ') || 'general sightseeing'}
 
-Return ONLY valid JSON in this exact format:
-{
-  "title": "string",
-  "summary": "string (2-3 sentences)",
-  "totalEstimatedCost": number,
-  "currency": "USD",
-  "days": [
-    {
-      "day": number,
-      "theme": "string",
-      "activities": [
-        {
-          "time": "HH:MM",
-          "place": "string",
-          "description": "string",
-          "duration": "string",
-          "estimatedCost": number,
-          "tip": "string",
-          "category": "food|culture|adventure|nature|shopping|transport"
-        }
-      ]
-    }
-  ],
-  "packingTips": ["string"],
-  "bestTimeToVisit": "string",
-  "localPhrases": [{"phrase": "string", "meaning": "string"}]
-}`;
+      Return ONLY valid JSON in this exact format:
+      {
+        "title": "string",
+        "summary": "string (2-3 sentences)",
+        "totalEstimatedCost": number,
+        "currency": "USD",
+        "days": [
+          {
+            "day": number,
+            "theme": "string",
+            "activities": [
+              {
+                "time": "HH:MM",
+                "place": "string",
+                "description": "string",
+                "duration": "string",
+                "estimatedCost": number,
+                "tip": "string",
+                "category": "food|culture|adventure|nature|shopping|transport"
+              }
+            ]
+          }
+        ],
+        "packingTips": ["string"],
+        "bestTimeToVisit": "string",
+        "localPhrases": [{"phrase": "string", "meaning": "string"}]
+      }`;
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
@@ -70,7 +70,7 @@ Return ONLY valid JSON in this exact format:
 
     const itineraryPlan = JSON.parse(content);
 
-    // Save to DB (user is guaranteed authenticated at this point)
+    // Save to DB (user should be authenticated)
     await prisma.itinerary.create({
       data: {
         userId: req.user.id,
@@ -89,10 +89,11 @@ Return ONLY valid JSON in this exact format:
   }
 };
 
-//  2. AI DESTINATION DISCOVERY CHATBOT 
+// AI DESTINATION DISCOVERY CHATBOT 
 const chatSchema = z.object({
   message: z.string().min(1),
   history: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string() })).optional().default([]),
+  extraDetails: z.string().optional(),
 });
 
 export const chatWithDestinationBot = async (req: Request, res: Response, next: NextFunction) => {
@@ -100,7 +101,7 @@ export const chatWithDestinationBot = async (req: Request, res: Response, next: 
     const parsed = chatSchema.safeParse(req.body);
     if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
-    const { message, history } = parsed.data;
+    const { message, history, extraDetails } = parsed.data;
 
     // Get top destinations as context
     const destinations = await prisma.destination.findMany({
@@ -115,16 +116,18 @@ export const chatWithDestinationBot = async (req: Request, res: Response, next: 
 
     const systemPrompt = `You are WanderMind's friendly AI travel assistant. Help users discover perfect destinations and plan trips.
 
-Available destinations in our database:
-${destContext}
+    Available destinations in our database:
+    ${destContext}
 
-Guidelines:
-- Recommend destinations from our database when possible
-- Be conversational, enthusiastic, and knowledgeable
-- When recommending, always mention: best time to visit, avg daily cost, and 2-3 highlights
-- If asked for recommendations, return a JSON block with this structure inside your response:
-  <recommendations>{"destinations": [{"name": "...", "country": "...", "reason": "...", "avgCostPerDay": 0, "bestFor": "..."}]}</recommendations>
-- Always end with a follow-up question to refine recommendations`;
+    Guidelines:
+    - Recommend destinations from our database when possible
+    - Be conversational, enthusiastic, and knowledgeable
+    - When recommending, always mention: best time to visit, avg daily cost, and 2-3 highlights
+    - If asked for recommendations, return a JSON block with this structure inside your response:
+      <recommendations>{"destinations": [{"name": "...", "country": "...", "reason": "...", "avgCostPerDay": 0, "bestFor": "..."}]}</recommendations>
+    - Always end with a follow-up question to refine recommendations
+    
+    ${extraDetails ? `Important User Context: ${extraDetails}` : ''}`;
 
     const messages: any[] = [
       { role: 'system', content: systemPrompt },
@@ -146,7 +149,7 @@ Guidelines:
   }
 };
 
-// 3. AI PACKING LIST GENERATOR 
+// AI PACKING LIST GENERATOR 
 const packingSchema = z.object({
   destination: z.string().min(1),
   startDate: z.string().optional(),
@@ -163,28 +166,28 @@ export const generatePackingList = async (req: AuthRequest, res: Response, next:
     const { destination, startDate, endDate, activities, tripType } = parsed.data;
 
     const prompt = `Create a comprehensive packing list for a trip to ${destination}.
-Trip type: ${tripType}
-${startDate && endDate ? `Dates: ${startDate} to ${endDate}` : ''}
-Planned activities: ${activities.join(', ') || 'general sightseeing'}
+    Trip type: ${tripType}
+    ${startDate && endDate ? `Dates: ${startDate} to ${endDate}` : ''}
+    Planned activities: ${activities.join(', ') || 'general sightseeing'}
 
-Return ONLY valid JSON:
-{
-  "destination": "string",
-  "totalItems": number,
-  "categories": [
+    Return ONLY valid JSON:
     {
-      "name": "string",
-      "icon": "emoji",
-      "items": [
-        {"name": "string", "essential": boolean, "quantity": "string"}
-      ]
+      "destination": "string",
+      "totalItems": number,
+      "categories": [
+        {
+          "name": "string",
+          "icon": "emoji",
+          "items": [
+            {"name": "string", "essential": boolean, "quantity": "string"}
+          ]
+        }
+      ],
+      "weatherNote": "string",
+      "importantReminders": ["string"]
     }
-  ],
-  "weatherNote": "string",
-  "importantReminders": ["string"]
-}
 
-Categories should include: Clothing, Documents & Money, Toiletries, Electronics, Health & Safety, Snacks & Extras`;
+    Categories should include: Clothing, Documents & Money, Toiletries, Electronics, Health & Safety, Snacks & Extras`;
 
     const completion = await openai.chat.completions.create({
       model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
@@ -218,7 +221,7 @@ Categories should include: Clothing, Documents & Money, Toiletries, Electronics,
   }
 };
 
-// 4. AI BUDGET ANALYZER 
+// AI BUDGET ANALYZER 
 const budgetSchema = z.object({
   destination: z.string().min(1),
   days: z.number().min(1),
@@ -235,108 +238,108 @@ export const analyzeBudget = async (req: AuthRequest, res: Response, next: NextF
     const { destination, days, travelStyle, groupSize, totalBudget } = parsed.data;
 
     const prompt = `Analyze travel budget for ${destination} — ${days} days, ${groupSize} person(s), ${travelStyle} style.
-${totalBudget ? `User's total budget: $${totalBudget} USD` : ''}
+    ${totalBudget ? `User's total budget: $${totalBudget} USD` : ''}
 
-Return ONLY valid JSON:
-{
-  "destination": "string",
-  "days": number,
-  "groupSize": number,
-  "currency": "USD",
-  "estimatedTotal": number,
-  "perPersonPerDay": number,
-  "breakdown": {
-    "accommodation": number,
-    "food": number,
-    "transport": number,
-    "activities": number,
-    "shopping": number,
-    "misc": number
-  },
-  "budgetScore": number (0-100, 100 = very affordable),
-  "budgetLabel": "Budget|Moderate|Comfortable|Luxury",
-  "savingTips": ["string"],
-  "splurgeWorthy": ["string"],
-  "budgetVsEstimate": "under|on_track|over|not_provided"
-}`;
+    Return ONLY valid JSON:
+    {
+      "destination": "string",
+      "days": number,
+      "groupSize": number,
+      "currency": "USD",
+      "estimatedTotal": number,
+      "perPersonPerDay": number,
+      "breakdown": {
+        "accommodation": number,
+        "food": number,
+        "transport": number,
+        "activities": number,
+        "shopping": number,
+        "misc": number
+      },
+      "budgetScore": number (0-100, 100 = very affordable),
+      "budgetLabel": "Budget|Moderate|Comfortable|Luxury",
+      "savingTips": ["string"],
+      "splurgeWorthy": ["string"],
+      "budgetVsEstimate": "under|on_track|over|not_provided"
+    }`;
 
-    const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0.4,
+        const completion = await openai.chat.completions.create({
+          model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' },
+          temperature: 0.4,
+        });
+
+        const content = completion.choices[0].message.content;
+        if (!content) return sendError(res, 'Failed to analyze budget', 500);
+
+        sendSuccess(res, JSON.parse(content), 'Budget analysis complete');
+      } catch (err) {
+        next(err);
+      }
+    };
+
+    // AI JOURNAL SUMMARIZER 
+    const journalSchema = z.object({
+      rawNotes: z.string().min(10, 'Please write at least a few sentences'),
+      destination: z.string().min(1),
+      travelDate: z.string(),
     });
 
-    const content = completion.choices[0].message.content;
-    if (!content) return sendError(res, 'Failed to analyze budget', 500);
+    export const summarizeJournal = async (req: AuthRequest, res: Response, next: NextFunction) => {
+      try {
+        const parsed = journalSchema.safeParse(req.body);
+        if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
 
-    sendSuccess(res, JSON.parse(content), 'Budget analysis complete');
-  } catch (err) {
-    next(err);
-  }
-};
+        const { rawNotes, destination, travelDate } = parsed.data;
 
-// 5. AI JOURNAL SUMMARIZER 
-const journalSchema = z.object({
-  rawNotes: z.string().min(10, 'Please write at least a few sentences'),
-  destination: z.string().min(1),
-  travelDate: z.string(),
-});
+        const prompt = `Transform these raw travel notes into a polished, engaging travel journal entry.
 
-export const summarizeJournal = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const parsed = journalSchema.safeParse(req.body);
-    if (!parsed.success) return sendError(res, parsed.error.issues[0].message, 400);
+        Destination: ${destination}
+        Date: ${travelDate}
+        Raw Notes: ${rawNotes}
 
-    const { rawNotes, destination, travelDate } = parsed.data;
+        Return ONLY valid JSON:
+        {
+          "title": "string (creative, engaging title)",
+          "summary": "string (3-4 polished paragraphs, vivid and personal)",
+          "highlights": ["string (top 3-5 memorable moments)"],
+          "mood": "adventurous|relaxed|cultural|foodie|romantic|family",
+          "hashtags": ["string (8-10 relevant hashtags with #)"],
+          "quote": "string (an inspiring travel quote that fits this trip)",
+          "rating": number (1-5, based on how the notes sound)
+        }`;
 
-    const prompt = `Transform these raw travel notes into a polished, engaging travel journal entry.
+        const completion = await openai.chat.completions.create({
+          model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' },
+          temperature: 0.8,
+        });
 
-Destination: ${destination}
-Date: ${travelDate}
-Raw Notes: ${rawNotes}
+        const content = completion.choices[0].message.content;
+        if (!content) return sendError(res, 'Failed to summarize journal', 500);
 
-Return ONLY valid JSON:
-{
-  "title": "string (creative, engaging title)",
-  "summary": "string (3-4 polished paragraphs, vivid and personal)",
-  "highlights": ["string (top 3-5 memorable moments)"],
-  "mood": "adventurous|relaxed|cultural|foodie|romantic|family",
-  "hashtags": ["string (8-10 relevant hashtags with #)"],
-  "quote": "string (an inspiring travel quote that fits this trip)",
-  "rating": number (1-5, based on how the notes sound)
-}`;
+        const summary = JSON.parse(content);
 
-    const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_BASE_URL?.includes('openrouter') ? 'openai/gpt-4o-mini' : 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0.8,
-    });
+        // Save to DB
+        if (req.user) {
+          await prisma.journalEntry.create({
+            data: {
+              userId: req.user.id,
+              title: summary.title,
+              rawNotes,
+              aiSummary: summary.summary,
+              highlights: summary.highlights,
+              hashtags: summary.hashtags,
+              destination,
+              travelDate: new Date(travelDate),
+            },
+          });
+        }
 
-    const content = completion.choices[0].message.content;
-    if (!content) return sendError(res, 'Failed to summarize journal', 500);
-
-    const summary = JSON.parse(content);
-
-    // Save to DB
-    if (req.user) {
-      await prisma.journalEntry.create({
-        data: {
-          userId: req.user.id,
-          title: summary.title,
-          rawNotes,
-          aiSummary: summary.summary,
-          highlights: summary.highlights,
-          hashtags: summary.hashtags,
-          destination,
-          travelDate: new Date(travelDate),
-        },
-      });
-    }
-
-    sendSuccess(res, summary, 'Journal summarized successfully');
-  } catch (err) {
-    next(err);
-  }
-};
+        sendSuccess(res, summary, 'Journal summarized successfully');
+      } catch (err) {
+        next(err);
+      }
+    };

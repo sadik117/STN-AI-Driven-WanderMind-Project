@@ -7,22 +7,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  MapPin,
-  Star,
-  Clock,
-  Users,
-  SlidersHorizontal,
   Search,
   ArrowRight,
-  Heart,
-  TrendingUp,
   Sparkles,
   Filter,
-  X,
-  DollarSign
+  X
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { Input } from '@/components/ui/input';
@@ -61,9 +53,22 @@ interface Experience {
   };
 }
 
+export default function ExperiencesPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-20 text-center">
+        <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-muted-foreground animate-pulse">Loading experiences...</p>
+      </div>
+    }>
+      <ExperiencesContent />
+    </Suspense>
+  );
+}
+
 const CATEGORIES = ['All', 'Adventure', 'Food', 'Cultural', 'Nature', 'Wellness', 'Luxury', 'Family'];
 
-export default function ExperiencesPage() {
+function ExperiencesContent() {
   const searchParams = useSearchParams();
   const initialDestinationId = searchParams.get('destinationId') || '';
   

@@ -8,7 +8,7 @@ import { aiLimiter } from '../middleware/rateLimit.middleware';
 
 const router = Router();
 
-// All AI routes use strict rate limiting
+// All AI routes using strict rate limiting
 router.post('/itinerary', aiLimiter, authenticate, generateItinerary);
 router.post('/chat', aiLimiter, chatWithDestinationBot);
 router.post('/packing', aiLimiter, authenticate, generatePackingList);

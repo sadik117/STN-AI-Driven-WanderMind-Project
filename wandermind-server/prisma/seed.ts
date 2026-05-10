@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding database...');
 
-  // 1. Create Admins and Users
+  // Create Admins and Users
   const adminPassword = await bcrypt.hash('demo123', 10);
   const hostPassword = await bcrypt.hash('demo123', 10);
   const travelerPassword = await bcrypt.hash('demo123', 10);
@@ -57,7 +57,7 @@ async function main() {
     },
   });
 
-  // 2. Create Destinations
+  // Create Destinations
   const bali = await prisma.destination.upsert({
     where: { slug: 'bali-indonesia' },
     update: {},
@@ -102,7 +102,7 @@ async function main() {
     },
   });
 
-  // 3. Create Experiences
+  // Create Experiences
   const hostProfile = await prisma.hostProfile.findUnique({ where: { userId: hostUser.id } });
   
   if (hostProfile) {

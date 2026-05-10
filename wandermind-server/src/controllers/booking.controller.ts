@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { sendSuccess, sendError, sendPaginated } from '../utils/response';
 import { AuthRequest } from '../middleware/auth.middleware';
-import { io } from '../server';
+import { io } from '../index';
 
 export const createBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -266,6 +266,7 @@ export const updateBookingStatus = async (req: AuthRequest, res: Response, next:
           type: 'BOOKING_UPDATE',
           link: `/dashboard/host/bookings/${booking.id}`,
         },
+
       });
       io.to(`user:${booking.experience.host.userId}`).emit('notification', hostNotif);
     }

@@ -12,3 +12,6 @@ yarn-error.log*
 pino-debug.log*
 pnpm-debug.log*
 
+.vercel
+
+api/*

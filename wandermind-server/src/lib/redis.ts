@@ -9,7 +9,7 @@ export const redis = new Redis(redisUrl, {
 });
 
 redis.on('connect', () => logger.info('✅ Connected to Redis'));
-redis.on('error', (err) => logger.warn('⚠️ Redis error (continuing without cache):', err.message));
+redis.on('error', (err) => logger.warn(`⚠️ Redis error (continuing without cache): ${err.message}`));
 
 // Cache helpers
 export const getCache = async <T>(key: string): Promise<T | null> => {

@@ -97,7 +97,8 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
 
 // Google OAuth — placeholder (wire up with passport or custom handler)
 export const googleAuth = async (req: Request, res: Response) => {
-  const redirectUri = `${process.env.NODE_ENV === 'production' ? process.env.SERVER_URL : 'https://wandermind-server.onrender.com'}/api/auth/google/callback`;
+  const redirectUri = `https://wandermind-server.onrender.com/api/auth/google/callback`;
+
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile`;
   res.redirect(googleAuthUrl);
 };
@@ -107,7 +108,7 @@ export const googleCallback = async (req: Request, res: Response, next: NextFunc
     const { code } = req.query;
     if (!code) return res.redirect(`${process.env.CLIENT_URL}/login?error=no_code`);
 
-    const redirectUri = `${process.env.NODE_ENV === 'production' ? process.env.SERVER_URL : 'https://wandermind-server.onrender.com'}/api/auth/google/callback`;
+    const redirectUri = `https://wandermind-server.onrender.com/api/auth/google/callback`;
 
     // Exchange code for tokens
     console.log('Exchanging Google code for tokens...');

@@ -97,7 +97,7 @@ export const logout = async (req: AuthRequest, res: Response, next: NextFunction
 
 // Google OAuth — placeholder (wire up with passport or custom handler)
 export const googleAuth = async (req: Request, res: Response) => {
-  const redirectUri = `${process.env.NODE_ENV === 'production' ? process.env.SERVER_URL : 'http://localhost:5000'}/api/auth/google/callback`;
+  const redirectUri = `${process.env.NODE_ENV === 'production' ? process.env.SERVER_URL : 'https://wandermind-server.onrender.com'}/api/auth/google/callback`;
   const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile`;
   res.redirect(googleAuthUrl);
 };
@@ -107,9 +107,9 @@ export const googleCallback = async (req: Request, res: Response, next: NextFunc
     const { code } = req.query;
     if (!code) return res.redirect(`${process.env.CLIENT_URL}/login?error=no_code`);
 
-    const redirectUri = `${process.env.NODE_ENV === 'production' ? process.env.SERVER_URL : 'http://localhost:5000'}/api/auth/google/callback`;
+    const redirectUri = `${process.env.NODE_ENV === 'production' ? process.env.SERVER_URL : 'https://wandermind-server.onrender.com'}/api/auth/google/callback`;
 
-    // 1. Exchange code for tokens
+    // Exchange code for tokens
     console.log('Exchanging Google code for tokens...');
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -127,7 +127,7 @@ export const googleCallback = async (req: Request, res: Response, next: NextFunc
     console.log('Google Token Data:', tokenData);
     if (tokenData.error) throw new Error(tokenData.error_description || 'Failed to exchange code');
 
-    // 2. Get user info
+    // Get user info
     console.log('Fetching Google user info...');
     const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
@@ -135,7 +135,7 @@ export const googleCallback = async (req: Request, res: Response, next: NextFunc
     const googleUser = await userRes.json() as any;
     console.log('Google User Profile:', googleUser);
 
-    // 3. Upsert user
+    // Upsert user
     let user = await prisma.user.findUnique({ where: { email: googleUser.email } });
 
     if (!user) {
@@ -156,7 +156,7 @@ export const googleCallback = async (req: Request, res: Response, next: NextFunc
       });
     }
 
-    // 4. Generate JWT and redirect
+    // Generate JWT and redirect
     const token = generateToken(user.id);
     res.redirect(`${process.env.CLIENT_URL}/login?token=${token}&user=${encodeURIComponent(JSON.stringify({ id: user.id, name: user.name, email: user.email, role: user.role, image: user.image }))}`);
   } catch (err) {

@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "npx prisma generate && tsup src/index.ts --format esm --platform node --target node20 --outDir api --external pg-native --clean",
+    "build": "npx prisma@5.22.0 generate && tsup src/index.ts --format esm --platform node --target node20 --outDir api --external pg-native --clean",
     "start": "node api/index.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

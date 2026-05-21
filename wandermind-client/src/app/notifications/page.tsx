@@ -33,15 +33,47 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthStore();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const router = useRouter();
 
-  const isAuthenticated = useAuthStore((state) => state.user);
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  if (authLoading) {
+    return (
+      <div className="max-w-4xl mx-auto py-8 pb-8">
+        <DashboardHeader
+          title="Notifications"
+          description="Stay updated with your travel bookings and account activity."
+        />
+        <Card className="border-none shadow-xl shadow-primary/5 overflow-hidden rounded-3xl">
+          <CardContent className="p-0">
+            <div className="divide-y divide-border/50">
+              {Array(5).fill(0).map((_, i) => (
+                <div key={i} className="p-6 flex gap-4 animate-pulse">
+                  <Skeleton className="h-12 w-12 rounded-2xl shrink-0" />
+                  <div className="flex-1 space-y-3">
+                    <Skeleton className="h-5 w-1/3 rounded-lg" />
+                    <Skeleton className="h-4 w-3/4 rounded-lg" />
+                    <Skeleton className="h-3 w-20 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
-    router.push('/login');
+    return null;
   }
 
   const fetchNotifications = async () => {
